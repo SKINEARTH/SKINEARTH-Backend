@@ -7,28 +7,35 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "badge")
-@NoArgsConstructor
 @Getter
+@NoArgsConstructor
 public class Badge {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false,  unique = true)
-    private String code;
+    @Column(nullable = false, unique = true)
+    private Integer stage;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String name;
 
+    @Column(length = 255)
     private String description;
-    private Integer threshold;
+
+    private Integer recordCountThreshold;
+    private Integer streakThreshold;
+    private Integer missionCountThreshold;
 
     @Builder
-    public Badge(String code, String name, String description, Integer threshold) {
-        this.code = code;
+    public Badge(Integer stage, String name, String description,
+                 Integer recordCountThreshold, Integer streakThreshold, Integer missionCountThreshold) {
+        this.stage = stage;
         this.name = name;
         this.description = description;
-        this.threshold = threshold;
+        this.recordCountThreshold = recordCountThreshold;
+        this.streakThreshold = streakThreshold;
+        this.missionCountThreshold = missionCountThreshold;
     }
 }
