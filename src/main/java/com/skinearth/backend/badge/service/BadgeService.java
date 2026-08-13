@@ -12,4 +12,11 @@ import org.springframework.stereotype.Service;
 public class BadgeService {
 
     private final BadgeRepository badgeRepository;
+
+    public BadgeResponseDto getStageInfo(Integer stage) {
+        Badge badge = badgeRepository.findByStage(stage)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 단계입니다."));
+
+        return BadgeResponseDto.from(badge);
+    }
 }

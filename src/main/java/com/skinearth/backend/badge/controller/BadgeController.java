@@ -12,4 +12,13 @@ import org.springframework.web.bind.annotation.*;
 public class BadgeController {
 
     private final BadgeService badgeService;
+
+    @GetMapping
+    public ApiResponse<BadgeResponseDto> getMyStage(
+            @PathVariable Long userId,
+            @RequestParam Integer stage) {  // 임시: userId로 진짜 조회 대신 stage를 직접 받음
+
+        BadgeResponseDto result = badgeService.getStageInfo(stage);
+        return ApiResponse.success(200, "단계 조회 성공", result);
+    }
 }
