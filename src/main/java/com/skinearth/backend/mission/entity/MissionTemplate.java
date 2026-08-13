@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "mission_template")
+@Table(name = "mission_template", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"cause", "category", "action_type", "intensity", "timing"})
+})
 @Getter
 @NoArgsConstructor
 public class MissionTemplate {
@@ -15,19 +17,19 @@ public class MissionTemplate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String cause;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String category;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String actionType;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private String intensity;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private String timing;
 
     @Column(nullable = false)
