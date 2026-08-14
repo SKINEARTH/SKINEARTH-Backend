@@ -43,7 +43,12 @@ class DailyRecordServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-08-14T03:00:00Z"), ZoneId.of("Asia/Seoul"));
-        dailyRecordService = new DailyRecordService(dailyRecordRepository, userRepository, clock);
+        dailyRecordService = new DailyRecordService(
+                dailyRecordRepository,
+                userRepository,
+                clock,
+                new RecordStreakCalculator()
+        );
         user = User.builder()
                 .email("user@example.com")
                 .passwordHash("encoded-password")
@@ -59,6 +64,8 @@ class DailyRecordServiceTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(dailyRecordRepository.saveAndFlush(any(DailyRecord.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(dailyRecordRepository.findRecordDatesUpTo(USER_ID, TODAY))
+                .thenReturn(List.of(TODAY, TODAY.minusDays(1), TODAY.minusDays(2)));
 
         DailyRecordResponse response = dailyRecordService.createToday(USER_ID, request());
 
@@ -67,6 +74,7 @@ class DailyRecordServiceTest {
         assertThat(response.sleepHours()).isEqualTo(7);
         assertThat(response.skinCondition()).isEqualTo(4);
         assertThat(response.symptoms()).containsExactlyInAnyOrder(SymptomTag.DRYNESS, SymptomTag.REDNESS);
+        assertThat(response.currentStreak()).isEqualTo(3);
     }
 
     @Test
@@ -91,11 +99,13 @@ class DailyRecordServiceTest {
                 .skinCondition(2)
                 .build();
         when(dailyRecordRepository.findByUserIdAndRecordDate(USER_ID, TODAY)).thenReturn(Optional.of(record));
+        when(dailyRecordRepository.findRecordDatesUpTo(USER_ID, TODAY)).thenReturn(List.of(TODAY));
 
         DailyRecordResponse response = dailyRecordService.updateToday(USER_ID, request());
 
         assertThat(response.acLevel()).isEqualTo(3);
         assertThat(response.skinCondition()).isEqualTo(4);
+        assertThat(response.currentStreak()).isOne();
     }
 
     @Test

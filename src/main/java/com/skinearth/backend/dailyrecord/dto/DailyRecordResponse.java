@@ -15,9 +15,10 @@ public record DailyRecordResponse(
         Integer stressLevel,
         Integer mealRegularity,
         Integer skinCondition,
-        Set<SymptomTag> symptoms
+        Set<SymptomTag> symptoms,
+        int currentStreak
 ) {
-    public static DailyRecordResponse from(DailyRecord record) {
+    public static DailyRecordResponse from(DailyRecord record, int currentStreak) {
         return new DailyRecordResponse(
                 record.getId(),
                 record.getRecordDate(),
@@ -27,7 +28,8 @@ public record DailyRecordResponse(
                 record.getStressLevel(),
                 record.getMealRegularity(),
                 record.getSkinCondition(),
-                record.getSymptoms()
+                record.getSymptoms(),
+                currentStreak
         );
     }
 }
