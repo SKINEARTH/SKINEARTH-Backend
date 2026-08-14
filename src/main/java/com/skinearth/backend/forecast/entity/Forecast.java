@@ -1,5 +1,6 @@
 package com.skinearth.backend.forecast.entity;
 
+import com.skinearth.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,9 +18,9 @@ public class Forecast {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    //FK 연결 필요
-    @Column(nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private LocalDate targetDate;
@@ -41,10 +42,10 @@ public class Forecast {
     private LocalDateTime createdAt;
 
     @Builder
-    public Forecast(Long userId, LocalDate targetDate,
+    public Forecast(User user, LocalDate targetDate,
                     Integer inputAc, Integer inputScreenTime, Integer inputSleepHours,
                     Integer inputStress, Integer inputMeal) {
-        this.userId = userId;
+        this.user = user;
         this.targetDate = targetDate;
         this.inputAc = inputAc;
         this.inputScreenTime = inputScreenTime;

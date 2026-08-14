@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.time.LocalDate;
 import java.util.Optional;
 
-public interface ForecastRepository extends JpaRepository<Forecast,Long> {
-    Optional<Forecast> findByUserIdAndTargetDate(Long userId, LocalDate targetDate);
-    boolean existsByUserIdAndTargetDate(Long userId, LocalDate targetDate);
+public interface ForecastRepository extends JpaRepository<Forecast, Long> {
+    Optional<Forecast> findByUser_IdAndTargetDate(Long userId, LocalDate targetDate);
+    boolean existsByUser_IdAndTargetDate(Long userId, LocalDate targetDate);
 }
