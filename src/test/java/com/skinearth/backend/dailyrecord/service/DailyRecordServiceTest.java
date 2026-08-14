@@ -105,7 +105,7 @@ class DailyRecordServiceTest {
 
         assertThat(response.acLevel()).isEqualTo(3);
         assertThat(response.skinCondition()).isEqualTo(4);
-        assertThat(response.currentStreak()).isOne();
+        assertThat(response.currentStreak()).isZero();
     }
 
     @Test

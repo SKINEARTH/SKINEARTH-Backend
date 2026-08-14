@@ -24,6 +24,6 @@ public class RecordStreakCalculator {
             expectedDate = expectedDate.minusDays(1);
         }
 
-        return streak;
+        return streak == 1 ? 0 : streak;
     }
 }
