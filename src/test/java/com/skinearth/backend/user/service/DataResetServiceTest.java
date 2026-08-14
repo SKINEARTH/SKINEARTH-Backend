@@ -57,8 +57,8 @@ class DataResetServiceTest {
         ReflectionTestUtils.setField(user, "stage", 3);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(dailyRecordRepository.deleteByUserId(USER_ID)).thenReturn(12L);
-        when(forecastRepository.deleteByUserId(USER_ID)).thenReturn(3L);
-        when(missionCardRepository.deleteByUserId(USER_ID)).thenReturn(5L);
+        when(forecastRepository.deleteByUser_Id(USER_ID)).thenReturn(3L);
+        when(missionCardRepository.deleteByUser_Id(USER_ID)).thenReturn(5L);
 
         DataResetResponse response = dataResetService.reset(USER_ID);
 
@@ -82,8 +82,8 @@ class DataResetServiceTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("사용자를 찾을 수 없습니다.");
         verify(dailyRecordRepository, never()).deleteByUserId(USER_ID);
-        verify(forecastRepository, never()).deleteByUserId(USER_ID);
-        verify(missionCardRepository, never()).deleteByUserId(USER_ID);
+        verify(forecastRepository, never()).deleteByUser_Id(USER_ID);
+        verify(missionCardRepository, never()).deleteByUser_Id(USER_ID);
     }
 
     private User personalizedUser() {
