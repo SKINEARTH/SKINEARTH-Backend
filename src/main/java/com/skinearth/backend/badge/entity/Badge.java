@@ -24,16 +24,20 @@ public class Badge {
     @Column(length = 255)
     private String description;
 
+    @Column(length = 255)
+    private String conditionDescription;
+
     private Integer recordCountThreshold;
     private Integer streakThreshold;
     private Integer missionCountThreshold;
 
     @Builder
-    public Badge(Integer stage, String name, String description,
+    public Badge(Integer stage, String name, String description, String conditionDescription,
                  Integer recordCountThreshold, Integer streakThreshold, Integer missionCountThreshold) {
         this.stage = stage;
         this.name = name;
         this.description = description;
+        this.conditionDescription = conditionDescription;
         this.recordCountThreshold = recordCountThreshold;
         this.streakThreshold = streakThreshold;
         this.missionCountThreshold = missionCountThreshold;
