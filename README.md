@@ -22,3 +22,7 @@ IntelliJ 실행 구성 > 환경 변수에 추가:
 
 ### 3. 실행
 `BackendApplication` 실행
+
+## 도메인 문서
+
+- [User 도메인 협업 가이드](docs/user-domain.md)
