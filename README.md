@@ -26,5 +26,6 @@ IntelliJ 실행 구성 > 환경 변수에 추가:
 
 ## 도메인 문서
 
+- [구현 완료 API 명세](docs/API.md)
 - [User 도메인 협업 가이드](docs/user-domain.md)
 - [이메일 인증 협업 가이드](docs/auth.md)
