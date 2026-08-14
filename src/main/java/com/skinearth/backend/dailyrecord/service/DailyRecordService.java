@@ -20,6 +20,8 @@ import java.time.LocalDate;
 @Transactional(readOnly = true)
 public class DailyRecordService {
 
+    public static final int FORECAST_TARGET_RECORD_COUNT = 10;
+
     private final DailyRecordRepository dailyRecordRepository;
     private final UserRepository userRepository;
     private final Clock clock;
@@ -88,6 +90,12 @@ public class DailyRecordService {
                 dailyRecordRepository.findRecordDatesUpTo(userId, today),
                 today
         );
-        return DailyRecordResponse.from(record, currentStreak);
+        long validRecordCount = dailyRecordRepository.countByUserId(userId);
+        return DailyRecordResponse.from(
+                record,
+                currentStreak,
+                validRecordCount,
+                FORECAST_TARGET_RECORD_COUNT
+        );
     }
 }
