@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -44,14 +45,28 @@ public class MissionCard {
     @Column(nullable = false)
     private Boolean isCompleted;
 
+    private LocalDateTime completedAt;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private Boolean isReplaced;
+
     @Builder
     public MissionCard(User user, MissionTemplate template, LocalDate issuedDate,
-                       String title, String description, Boolean isCompleted) {
+                       String title, String description, Boolean isCompleted, Boolean isReplaced) {
         this.user = user;
         this.template = template;
         this.issuedDate = issuedDate;
         this.title = title;
         this.description = description;
-        this.isCompleted = isCompleted;
+        this.isCompleted = Boolean.TRUE.equals(isCompleted);
+        this.isReplaced = Boolean.TRUE.equals(isReplaced);
+    }
+
+    public void complete(LocalDateTime completedAt) {
+        if (Boolean.TRUE.equals(isCompleted)) {
+            throw new IllegalStateException("이미 완료한 미션입니다.");
+        }
+        this.isCompleted = true;
+        this.completedAt = completedAt;
     }
 }

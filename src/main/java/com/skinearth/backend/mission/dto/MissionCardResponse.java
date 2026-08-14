@@ -3,6 +3,7 @@ package com.skinearth.backend.mission.dto;
 import com.skinearth.backend.mission.entity.MissionCard;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record MissionCardResponse(
         Long id,
@@ -10,7 +11,9 @@ public record MissionCardResponse(
         String title,
         String description,
         LocalDate issuedDate,
-        Boolean isCompleted
+        Boolean isCompleted,
+        Boolean isReplaced,
+        LocalDateTime completedAt
 ) {
     public static MissionCardResponse from(MissionCard card) {
         return new MissionCardResponse(
@@ -19,7 +22,9 @@ public record MissionCardResponse(
                 card.getTitle(),
                 card.getDescription(),
                 card.getIssuedDate(),
-                card.getIsCompleted()
+                card.getIsCompleted(),
+                card.getIsReplaced(),
+                card.getCompletedAt()
         );
     }
 }
