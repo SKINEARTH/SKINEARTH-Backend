@@ -1,5 +1,6 @@
 package com.skinearth.backend.dailyrecord.service;
 
+import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.dailyrecord.dto.DailyRecordRequest;
 import com.skinearth.backend.dailyrecord.dto.DailyRecordResponse;
@@ -26,6 +27,7 @@ public class DailyRecordService {
     private final UserRepository userRepository;
     private final Clock clock;
     private final RecordStreakCalculator recordStreakCalculator;
+    private final BadgeService badgeService;
 
     @Transactional
     public DailyRecordResponse createToday(Long userId, DailyRecordRequest request) {
@@ -49,7 +51,9 @@ public class DailyRecordService {
 
         try {
             DailyRecord savedRecord = dailyRecordRepository.saveAndFlush(record);
-            return responseWithStreak(savedRecord, userId, today);
+            DailyRecordResponse response = responseWithStreak(savedRecord, userId, today);
+            badgeService.tryPromote(userId, (int) response.validRecordCount(), response.currentStreak());
+            return response;
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException("오늘의 기록이 이미 존재합니다.");
         }
@@ -72,7 +76,9 @@ public class DailyRecordService {
                 request.skinCondition(),
                 request.symptoms()
         );
-        return responseWithStreak(record, userId, LocalDate.now(clock));
+        DailyRecordResponse response = responseWithStreak(record, userId, LocalDate.now(clock));
+        badgeService.tryPromote(userId, (int) response.validRecordCount(), response.currentStreak());
+        return response;
     }
 
     private User findUser(Long userId) {
