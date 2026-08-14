@@ -16,6 +16,8 @@ public interface DailyRecordRepository extends JpaRepository<DailyRecord, Long> 
 
     long countByUserId(Long userId);
 
+    long deleteByUserId(Long userId);
+
     @Query("""
             select record.recordDate
             from DailyRecord record
