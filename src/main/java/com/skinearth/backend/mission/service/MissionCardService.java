@@ -1,5 +1,6 @@
 package com.skinearth.backend.mission.service;
 
+import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.mission.dto.MissionCardResponse;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
@@ -24,6 +25,7 @@ public class MissionCardService {
 
     private final MissionCardRepository missionCardRepository;
     private final Clock clock;
+    private final BadgeService badgeService;
 
     @Transactional(readOnly = true)
     public MissionCardResponse getTodayCard(Long userId) {
@@ -44,6 +46,9 @@ public class MissionCardService {
         }
 
         card.complete(LocalDateTime.now(clock));
+
+        badgeService.tryPromote(userId, 0, 0);
+
         return MissionHistoryResponse.from(card, today);
     }
 
