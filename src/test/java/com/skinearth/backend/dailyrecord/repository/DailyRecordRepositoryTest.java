@@ -1,6 +1,7 @@
 package com.skinearth.backend.dailyrecord.repository;
 
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
+import com.skinearth.backend.dailyrecord.entity.SymptomTag;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,7 +30,13 @@ class DailyRecordRepositoryTest {
         DailyRecord saved = dailyRecordRepository.saveAndFlush(record(user, date));
 
         assertThat(dailyRecordRepository.findByUserIdAndRecordDate(user.getId(), date))
-                .contains(saved);
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getId()).isEqualTo(saved.getId());
+                    assertThat(found.getSymptoms()).containsExactlyInAnyOrder(
+                            SymptomTag.DRYNESS,
+                            SymptomTag.REDNESS
+                    );
+                });
     }
 
     @Test
@@ -61,6 +69,7 @@ class DailyRecordRepositoryTest {
                 .stressLevel(2)
                 .mealRegularity(3)
                 .skinCondition(4)
+                .symptoms(List.of(SymptomTag.DRYNESS, SymptomTag.REDNESS))
                 .build();
     }
 }

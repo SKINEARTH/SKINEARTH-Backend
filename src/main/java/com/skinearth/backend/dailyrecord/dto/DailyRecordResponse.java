@@ -1,8 +1,10 @@
 package com.skinearth.backend.dailyrecord.dto;
 
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
+import com.skinearth.backend.dailyrecord.entity.SymptomTag;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 public record DailyRecordResponse(
         Long id,
@@ -12,7 +14,8 @@ public record DailyRecordResponse(
         Integer sleepHours,
         Integer stressLevel,
         Integer mealRegularity,
-        Integer skinCondition
+        Integer skinCondition,
+        Set<SymptomTag> symptoms
 ) {
     public static DailyRecordResponse from(DailyRecord record) {
         return new DailyRecordResponse(
@@ -23,7 +26,8 @@ public record DailyRecordResponse(
                 record.getSleepHours(),
                 record.getStressLevel(),
                 record.getMealRegularity(),
-                record.getSkinCondition()
+                record.getSkinCondition(),
+                record.getSymptoms()
         );
     }
 }

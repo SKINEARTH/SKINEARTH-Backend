@@ -4,6 +4,7 @@ import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.dailyrecord.dto.DailyRecordRequest;
 import com.skinearth.backend.dailyrecord.dto.DailyRecordResponse;
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
+import com.skinearth.backend.dailyrecord.entity.SymptomTag;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.repository.UserRepository;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,6 +66,7 @@ class DailyRecordServiceTest {
         assertThat(response.acLevel()).isEqualTo(3);
         assertThat(response.sleepHours()).isEqualTo(7);
         assertThat(response.skinCondition()).isEqualTo(4);
+        assertThat(response.symptoms()).containsExactlyInAnyOrder(SymptomTag.DRYNESS, SymptomTag.REDNESS);
     }
 
     @Test
@@ -105,6 +108,7 @@ class DailyRecordServiceTest {
     }
 
     private DailyRecordRequest request() {
-        return new DailyRecordRequest(3, 4, 7, 2, 3, 4);
+        return new DailyRecordRequest(3, 4, 7, 2, 3, 4,
+                List.of(SymptomTag.DRYNESS, SymptomTag.REDNESS));
     }
 }
