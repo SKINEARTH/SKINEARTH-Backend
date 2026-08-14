@@ -17,14 +17,14 @@ public class ForecastService {
     private final ForecastRepository forecastRepository;
     private final UserRepository userRepository;
 
-    public ForecastResponseDto createForecast(ForecastRequestDto dto) {
+    public ForecastResponseDto createForecast(Long userId, ForecastRequestDto dto) {
         LocalDate targetDate = LocalDate.now().plusDays(1);
 
-        if (forecastRepository.existsByUser_IdAndTargetDate(dto.getUserId(), targetDate)) {
+        if (forecastRepository.existsByUser_IdAndTargetDate(userId, targetDate)) {
             throw new IllegalArgumentException("이미 존재하는 예보입니다.");
         }
 
-        User user = userRepository.findById(dto.getUserId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         Forecast forecast = Forecast.builder()
