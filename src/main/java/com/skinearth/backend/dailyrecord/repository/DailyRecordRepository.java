@@ -18,6 +18,12 @@ public interface DailyRecordRepository extends JpaRepository<DailyRecord, Long> 
 
     long deleteByUserId(Long userId);
 
+    List<DailyRecord> findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
+            Long userId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
     @Query("""
             select record.recordDate
             from DailyRecord record
