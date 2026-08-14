@@ -16,9 +16,18 @@ public record DailyRecordResponse(
         Integer mealRegularity,
         Integer skinCondition,
         Set<SymptomTag> symptoms,
-        int currentStreak
+        int currentStreak,
+        long validRecordCount,
+        int targetRecordCount,
+        boolean forecastReady,
+        boolean forecastTransitionReached
 ) {
-    public static DailyRecordResponse from(DailyRecord record, int currentStreak) {
+    public static DailyRecordResponse from(
+            DailyRecord record,
+            int currentStreak,
+            long validRecordCount,
+            int targetRecordCount
+    ) {
         return new DailyRecordResponse(
                 record.getId(),
                 record.getRecordDate(),
@@ -29,7 +38,11 @@ public record DailyRecordResponse(
                 record.getMealRegularity(),
                 record.getSkinCondition(),
                 record.getSymptoms(),
-                currentStreak
+                currentStreak,
+                validRecordCount,
+                targetRecordCount,
+                validRecordCount >= targetRecordCount,
+                validRecordCount == targetRecordCount
         );
     }
 }

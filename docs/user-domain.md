@@ -13,11 +13,13 @@
 | `passwordHash` | `password_hash` | BCrypt 단방향 암호화 비밀번호 |
 | `nickname` | `nickname` | 사용자 닉네임. 가입 직후에는 null 가능 |
 | `userStatus` | `user_status` | `EMPLOYEE`, `STUDENT`, `OTHER`. 가입 직후에는 null 가능 |
-| `skinConcern` | `skin_concern` | 가장 큰 피부 고민. 가입 직후에는 null 가능 |
+| `skinConcerns` | `user_skin_concern.skin_concern` | 피부 고민 다중 선택. 개인화 설문 완료 전에는 빈 컬렉션 |
+| `personalizationCompleted` | `personalization_completed` | 개인화 설문 완료 여부 |
 | `serviceTermsAgreed` | `service_terms_agreed` | 서비스 이용약관 필수 동의 |
 | `sensitiveDataAgreed` | `sensitive_data_agreed` | 건강·생활습관 관련 민감정보 처리 필수 동의 |
 | `researchDataAgreed` | `research_data_agreed` | 연구목적 데이터 공유 선택 동의 |
-| `stage` | `stage` | 뱃지 단계. 신규 사용자는 0, 허용 범위는 0~3 |
+| `stage` | `stage` | 뱃지 단계. 신규 사용자는 1단계 관측자, 허용 범위는 1~3 |
+| `createdAt` | `created_at` | 가입 시각. 마이페이지에서는 가입일로 표시 |
 
 ## 다른 도메인의 연동 지점
 
@@ -31,7 +33,15 @@
 - 카카오 로그인은 최신 화면 범위에 포함되지 않아 #19를 진행하지 않기로 결정했습니다.
 - 인증 정보의 테이블 구조는 #18에서 정의하며, 시연용 우회 로그인을 포함하지 않습니다.
 
+로그인 응답의 `personalizationCompleted` 값으로 프론트엔드가 개인화 설문 화면 진입 여부를 판단합니다.
+
+## 개인화 설문 선택지
+
+- 현재 상태: `EMPLOYEE`, `STUDENT`, `OTHER`
+- 피부 고민: `DRYNESS`, `SENSITIVITY`, `TROUBLE`, `DULLNESS`, `PORES`, `OILINESS`
+- 피부 타입은 최신 화면에서 제외되어 저장하지 않습니다.
+- 피부 고민은 1개 이상 선택하며 중복 선택할 수 없습니다.
+
 ## 미확정 사항
 
-- `skinConcern`의 최종 선택지는 기능명세 Open Issue G가 확정된 후 enum 전환 여부를 결정합니다.
 - 사용자 데이터 초기화 정책과 동의 철회 이력 보존 여부는 별도 이슈에서 정의합니다.

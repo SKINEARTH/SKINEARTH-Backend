@@ -66,6 +66,7 @@ class DailyRecordServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(dailyRecordRepository.findRecordDatesUpTo(USER_ID, TODAY))
                 .thenReturn(List.of(TODAY, TODAY.minusDays(1), TODAY.minusDays(2)));
+        when(dailyRecordRepository.countByUserId(USER_ID)).thenReturn(3L);
 
         DailyRecordResponse response = dailyRecordService.createToday(USER_ID, request());
 
@@ -75,6 +76,10 @@ class DailyRecordServiceTest {
         assertThat(response.skinCondition()).isEqualTo(4);
         assertThat(response.symptoms()).containsExactlyInAnyOrder(SymptomTag.DRYNESS, SymptomTag.REDNESS);
         assertThat(response.currentStreak()).isEqualTo(3);
+        assertThat(response.validRecordCount()).isEqualTo(3);
+        assertThat(response.targetRecordCount()).isEqualTo(10);
+        assertThat(response.forecastReady()).isFalse();
+        assertThat(response.forecastTransitionReached()).isFalse();
     }
 
     @Test
@@ -100,12 +105,14 @@ class DailyRecordServiceTest {
                 .build();
         when(dailyRecordRepository.findByUserIdAndRecordDate(USER_ID, TODAY)).thenReturn(Optional.of(record));
         when(dailyRecordRepository.findRecordDatesUpTo(USER_ID, TODAY)).thenReturn(List.of(TODAY));
+        when(dailyRecordRepository.countByUserId(USER_ID)).thenReturn(1L);
 
         DailyRecordResponse response = dailyRecordService.updateToday(USER_ID, request());
 
         assertThat(response.acLevel()).isEqualTo(3);
         assertThat(response.skinCondition()).isEqualTo(4);
         assertThat(response.currentStreak()).isZero();
+        assertThat(response.validRecordCount()).isOne();
     }
 
     @Test

@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface MissionCardRepository extends JpaRepository<MissionCard, Long> {
     Optional<MissionCard> findByUser_IdAndIssuedDate(Long userId, LocalDate issuedDate);
+
+    long deleteByUser_Id(Long userId);
 }

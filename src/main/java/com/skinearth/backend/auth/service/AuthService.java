@@ -62,7 +62,8 @@ public class AuthService {
         return new LoginResponse(
                 jwtService.issueAccessToken(user),
                 "Bearer",
-                JwtService.ACCESS_TOKEN_EXPIRES_IN
+                JwtService.ACCESS_TOKEN_EXPIRES_IN,
+                user.isPersonalizationCompleted()
         );
     }
 

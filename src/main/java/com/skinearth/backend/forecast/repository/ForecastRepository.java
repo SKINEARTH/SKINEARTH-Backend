@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface ForecastRepository extends JpaRepository<Forecast, Long> {
     Optional<Forecast> findByUser_IdAndTargetDate(Long userId, LocalDate targetDate);
     boolean existsByUser_IdAndTargetDate(Long userId, LocalDate targetDate);
+    long deleteByUser_Id(Long userId);
 }
