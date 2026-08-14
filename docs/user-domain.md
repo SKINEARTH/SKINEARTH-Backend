@@ -19,6 +19,7 @@
 | `sensitiveDataAgreed` | `sensitive_data_agreed` | 건강·생활습관 관련 민감정보 처리 필수 동의 |
 | `researchDataAgreed` | `research_data_agreed` | 연구목적 데이터 공유 선택 동의 |
 | `stage` | `stage` | 뱃지 단계. 신규 사용자는 1단계 관측자, 허용 범위는 1~3 |
+| `createdAt` | `created_at` | 가입 시각. 마이페이지에서는 가입일로 표시 |
 
 ## 다른 도메인의 연동 지점
 
