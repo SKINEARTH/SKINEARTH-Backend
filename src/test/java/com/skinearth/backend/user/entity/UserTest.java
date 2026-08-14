@@ -19,10 +19,10 @@ class UserTest {
     }
 
     @Test
-    void createsUserWithInitialStageZero() {
+    void createsUserWithInitialStageOne() {
         User user = validUser();
 
-        assertThat(user.getStage()).isZero();
+        assertThat(user.getStage()).isOne();
     }
 
     @Test

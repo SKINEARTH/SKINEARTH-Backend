@@ -72,7 +72,7 @@ public class User {
     @Column(nullable = false)
     private boolean researchDataAgreed;
 
-    @Min(0)
+    @Min(1)
     @Max(3)
     @Column(nullable = false)
     private int stage;
@@ -90,7 +90,7 @@ public class User {
         this.sensitiveDataAgreed = sensitiveDataAgreed;
         this.researchDataAgreed = researchDataAgreed;
         this.personalizationCompleted = nickname != null && userStatus != null && !this.skinConcerns.isEmpty();
-        this.stage = 0;
+        this.stage = 1;
     }
 
     public Set<SkinConcern> getSkinConcerns() {
