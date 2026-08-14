@@ -61,6 +61,19 @@ class DailyRecordRepositoryTest {
                 .containsExactly(today, today.minusDays(1), today.minusDays(2));
     }
 
+    @Test
+    void countsOnlyRecordsOwnedByUser() {
+        User firstUser = userRepository.save(user("count-one@example.com"));
+        User secondUser = userRepository.save(user("count-two@example.com"));
+        LocalDate today = LocalDate.of(2026, 8, 14);
+        dailyRecordRepository.save(record(firstUser, today));
+        dailyRecordRepository.save(record(firstUser, today.minusDays(1)));
+        dailyRecordRepository.saveAndFlush(record(secondUser, today));
+
+        assertThat(dailyRecordRepository.countByUserId(firstUser.getId())).isEqualTo(2);
+        assertThat(dailyRecordRepository.countByUserId(secondUser.getId())).isOne();
+    }
+
     private User user(String email) {
         return User.builder()
                 .email(email)
