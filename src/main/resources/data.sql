@@ -76,3 +76,8 @@ INSERT IGNORE INTO mission_template (cause, category, action_type, intensity, ti
 ('식사규칙성', '규칙적 식사', '건강 간식 제안', '집중', '지금', true),
 ('식사규칙성', '규칙적 식사', '건강 간식 제안', '집중', '점심후', true),
 ('식사규칙성', '규칙적 식사', '건강 간식 제안', '집중', '퇴근전', true);
+
+INSERT IGNORE INTO badge (stage, name, description, record_count_threshold, streak_threshold, mission_count_threshold) VALUES
+(1, '관측자', '가입하면 누구나 시작하는 첫 단계예요', NULL, NULL, NULL),
+(2, '탐사자', '유효 기록 10건을 달성하면 승급해요', 10, NULL, NULL),
+(3, '여행자', '연속 기록 7일 또는 미션 누적 완료 10회를 달성하면 승급해요', NULL, 7, 10);
