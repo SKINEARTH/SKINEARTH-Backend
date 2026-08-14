@@ -1,6 +1,7 @@
 package com.skinearth.backend.badge.service;
 
 import com.skinearth.backend.badge.dto.BadgeResponseDto;
+import com.skinearth.backend.badge.dto.BadgeResponseDto.ProgressItem;
 import com.skinearth.backend.badge.entity.Badge;
 import com.skinearth.backend.badge.judge.StageJudge;
 import com.skinearth.backend.badge.repository.BadgeRepository;
@@ -16,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -40,40 +44,46 @@ public class BadgeService {
         Badge nextBadge = badgeRepository.findByStage(user.getStage() + 1).orElse(null);
 
         if (nextBadge == null) {
-            return BadgeResponseDto.from(badge, null, null);
+            return BadgeResponseDto.from(badge, Collections.emptyList());
         }
+
+        List<ProgressItem> progressList = new ArrayList<>();
 
         Integer recordThreshold = nextBadge.getRecordCountThreshold();
         Integer streakThreshold = nextBadge.getStreakThreshold();
         Integer missionThreshold = nextBadge.getMissionCountThreshold();
 
-        int currentProgress;
-        int targetThreshold;
-
         if (recordThreshold != null) {
             // 2단계: 기록 건수 단일 조건
-            currentProgress = (int) dailyRecordRepository.countByUserId(userId);
-            targetThreshold = recordThreshold;
+            int recordCurrent = (int) dailyRecordRepository.countByUserId(userId);
+            progressList.add(ProgressItem.builder()
+                    .label("궤도를 기록하기")
+                    .current(recordCurrent)
+                    .target(recordThreshold)
+                    .build());
         } else {
-            // 3단계: 스트릭 OR 미션, 더 가까운 쪽을 진행률로 표시
-            LocalDate today = LocalDate.now(clock);
-            int streakCurrent = recordStreakCalculator.calculate(
-                    dailyRecordRepository.findRecordDatesUpTo(userId, today), today);
-            int missionCurrent = (int) missionCardRepository.countByUser_IdAndIsCompletedTrue(userId);
-
-            double streakRatio = streakThreshold != null ? (double) streakCurrent / streakThreshold : 0;
-            double missionRatio = missionThreshold != null ? (double) missionCurrent / missionThreshold : 0;
-
-            if (streakRatio >= missionRatio) {
-                currentProgress = streakCurrent;
-                targetThreshold = streakThreshold;
-            } else {
-                currentProgress = missionCurrent;
-                targetThreshold = missionThreshold;
+            // 3단계: 스트릭 조건 + 미션 조건, 둘 다 각각 표시
+            if (streakThreshold != null) {
+                LocalDate today = LocalDate.now(clock);
+                int streakCurrent = recordStreakCalculator.calculate(
+                        dailyRecordRepository.findRecordDatesUpTo(userId, today), today);
+                progressList.add(ProgressItem.builder()
+                        .label("궤도 연속 기록하기")
+                        .current(streakCurrent)
+                        .target(streakThreshold)
+                        .build());
+            }
+            if (missionThreshold != null) {
+                int missionCurrent = (int) missionCardRepository.countByUser_IdAndIsCompletedTrue(userId);
+                progressList.add(ProgressItem.builder()
+                        .label("탐사 미션 완료하기")
+                        .current(missionCurrent)
+                        .target(missionThreshold)
+                        .build());
             }
         }
 
-        return BadgeResponseDto.from(badge, currentProgress, targetThreshold);
+        return BadgeResponseDto.from(badge, progressList);
     }
 
     @Transactional
@@ -96,6 +106,6 @@ public class BadgeService {
         Badge currentBadge = badgeRepository.findByStage(user.getStage())
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 단계입니다."));
 
-        return BadgeResponseDto.from(currentBadge, null, null);
+        return BadgeResponseDto.from(currentBadge, Collections.emptyList());
     }
 }
