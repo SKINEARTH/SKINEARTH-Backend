@@ -37,11 +37,6 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserStatus userStatus;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private SkinType skinType;
-
     @NotBlank
     @Column(nullable = false, length = 50)
     private String skinConcern;
@@ -55,7 +50,7 @@ public class User {
     private boolean sensitiveDataAgreed;
 
     @Column(nullable = false)
-    private boolean thirdPartyDataAgreed;
+    private boolean researchDataAgreed;
 
     @Min(0)
     @Max(3)
@@ -63,15 +58,14 @@ public class User {
     private int stage;
 
     @Builder
-    public User(String nickname, UserStatus userStatus, SkinType skinType, String skinConcern,
-                boolean serviceTermsAgreed, boolean sensitiveDataAgreed, boolean thirdPartyDataAgreed) {
+    public User(String nickname, UserStatus userStatus, String skinConcern,
+                boolean serviceTermsAgreed, boolean sensitiveDataAgreed, boolean researchDataAgreed) {
         this.nickname = nickname;
         this.userStatus = userStatus;
-        this.skinType = skinType;
         this.skinConcern = skinConcern;
         this.serviceTermsAgreed = serviceTermsAgreed;
         this.sensitiveDataAgreed = sensitiveDataAgreed;
-        this.thirdPartyDataAgreed = thirdPartyDataAgreed;
+        this.researchDataAgreed = researchDataAgreed;
         this.stage = 0;
     }
 }

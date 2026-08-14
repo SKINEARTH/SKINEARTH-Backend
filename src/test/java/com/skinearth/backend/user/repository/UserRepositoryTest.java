@@ -1,6 +1,5 @@
 package com.skinearth.backend.user.repository;
 
-import com.skinearth.backend.user.entity.SkinType;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.entity.UserStatus;
 import org.junit.jupiter.api.Test;
@@ -24,11 +23,10 @@ class UserRepositoryTest {
         User user = User.builder()
                 .nickname("스킨어스")
                 .userStatus(UserStatus.EMPLOYEE)
-                .skinType(SkinType.NORMAL)
                 .skinConcern("민감함")
                 .serviceTermsAgreed(true)
                 .sensitiveDataAgreed(true)
-                .thirdPartyDataAgreed(false)
+                .researchDataAgreed(false)
                 .build();
 
         User savedUser = userRepository.saveAndFlush(user);
@@ -38,7 +36,7 @@ class UserRepositoryTest {
                 .hasValueSatisfying(found -> {
                     assertThat(found.getNickname()).isEqualTo("스킨어스");
                     assertThat(found.getUserStatus()).isEqualTo(UserStatus.EMPLOYEE);
-                    assertThat(found.getSkinType()).isEqualTo(SkinType.NORMAL);
+                    assertThat(found.isResearchDataAgreed()).isFalse();
                     assertThat(found.getStage()).isZero();
                 });
     }

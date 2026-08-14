@@ -28,11 +28,10 @@ class UserTest {
         User user = User.builder()
                 .nickname("스킨어스")
                 .userStatus(UserStatus.EMPLOYEE)
-                .skinType(SkinType.DRY)
                 .skinConcern("건조함")
                 .serviceTermsAgreed(false)
                 .sensitiveDataAgreed(true)
-                .thirdPartyDataAgreed(false)
+                .researchDataAgreed(false)
                 .build();
 
         assertThat(validator.validate(user))
@@ -44,18 +43,17 @@ class UserTest {
         User user = validUser();
 
         assertThat(validator.validate(user)).isEmpty();
-        assertThat(user.isThirdPartyDataAgreed()).isFalse();
+        assertThat(user.isResearchDataAgreed()).isFalse();
     }
 
     private User validUser() {
         return User.builder()
                 .nickname("스킨어스")
                 .userStatus(UserStatus.STUDENT)
-                .skinType(SkinType.COMBINATION)
                 .skinConcern("트러블")
                 .serviceTermsAgreed(true)
                 .sensitiveDataAgreed(true)
-                .thirdPartyDataAgreed(false)
+                .researchDataAgreed(false)
                 .build();
     }
 }

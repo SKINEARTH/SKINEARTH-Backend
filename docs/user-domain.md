@@ -11,11 +11,10 @@
 | `id` | `id` | 사용자 PK |
 | `nickname` | `nickname` | 사용자 닉네임 |
 | `userStatus` | `user_status` | `EMPLOYEE`, `STUDENT`, `OTHER` |
-| `skinType` | `skin_type` | `OILY`, `DRY`, `COMBINATION`, `NORMAL` |
 | `skinConcern` | `skin_concern` | 가장 큰 피부 고민. 선택지 확정 전까지 문자열로 저장 |
 | `serviceTermsAgreed` | `service_terms_agreed` | 서비스 이용약관 필수 동의 |
 | `sensitiveDataAgreed` | `sensitive_data_agreed` | 건강·생활습관 관련 민감정보 처리 필수 동의 |
-| `thirdPartyDataAgreed` | `third_party_data_agreed` | B2B 제3자 활용 선택 동의 |
+| `researchDataAgreed` | `research_data_agreed` | 연구목적 데이터 공유 선택 동의 |
 | `stage` | `stage` | 뱃지 단계. 신규 사용자는 0, 허용 범위는 0~3 |
 
 ## 다른 도메인의 연동 지점
@@ -27,8 +26,8 @@
 ## 인증 관련
 
 - 이메일 회원가입·로그인은 #18에서 구현합니다.
-- 카카오 OAuth 로그인은 #19에서 구현합니다.
-- 인증 정보의 테이블 구조는 인증 이슈에서 정의하며, 이 도메인 이슈에는 시연용 우회 로그인을 포함하지 않습니다.
+- 카카오 로그인은 최신 화면 범위에 포함되지 않아 #19를 진행하지 않기로 결정했습니다.
+- 인증 정보의 테이블 구조는 #18에서 정의하며, 시연용 우회 로그인을 포함하지 않습니다.
 
 ## 미확정 사항
 
