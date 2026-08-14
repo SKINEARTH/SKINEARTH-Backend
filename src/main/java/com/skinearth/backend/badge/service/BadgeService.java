@@ -6,12 +6,16 @@ import com.skinearth.backend.badge.judge.StageJudge;
 import com.skinearth.backend.badge.repository.BadgeRepository;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
+import com.skinearth.backend.dailyrecord.service.RecordStreakCalculator;
 import com.skinearth.backend.mission.repository.MissionCardRepository;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +25,8 @@ public class BadgeService {
     private final UserRepository userRepository;
     private final MissionCardRepository missionCardRepository;
     private final DailyRecordRepository dailyRecordRepository;
+    private final RecordStreakCalculator recordStreakCalculator;
+    private final Clock clock;
     private final StageJudge stageJudge = new StageJudge();
 
     @Transactional(readOnly = true)
@@ -38,6 +44,7 @@ public class BadgeService {
         }
 
         Integer recordThreshold = nextBadge.getRecordCountThreshold();
+        Integer streakThreshold = nextBadge.getStreakThreshold();
         Integer missionThreshold = nextBadge.getMissionCountThreshold();
 
         int currentProgress;
@@ -48,9 +55,22 @@ public class BadgeService {
             currentProgress = (int) dailyRecordRepository.countByUserId(userId);
             targetThreshold = recordThreshold;
         } else {
-            // 3단계: OR 조건 중 missionCount 기준으로 단순화
-            currentProgress = (int) missionCardRepository.countByUser_IdAndIsCompletedTrue(userId);
-            targetThreshold = missionThreshold;
+            // 3단계: 스트릭 OR 미션, 더 가까운 쪽을 진행률로 표시
+            LocalDate today = LocalDate.now(clock);
+            int streakCurrent = recordStreakCalculator.calculate(
+                    dailyRecordRepository.findRecordDatesUpTo(userId, today), today);
+            int missionCurrent = (int) missionCardRepository.countByUser_IdAndIsCompletedTrue(userId);
+
+            double streakRatio = streakThreshold != null ? (double) streakCurrent / streakThreshold : 0;
+            double missionRatio = missionThreshold != null ? (double) missionCurrent / missionThreshold : 0;
+
+            if (streakRatio >= missionRatio) {
+                currentProgress = streakCurrent;
+                targetThreshold = streakThreshold;
+            } else {
+                currentProgress = missionCurrent;
+                targetThreshold = missionThreshold;
+            }
         }
 
         return BadgeResponseDto.from(badge, currentProgress, targetThreshold);
