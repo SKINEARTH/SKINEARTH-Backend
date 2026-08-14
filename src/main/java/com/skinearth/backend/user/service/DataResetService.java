@@ -26,8 +26,8 @@ public class DataResetService {
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
 
         long deletedDailyRecordCount = dailyRecordRepository.deleteByUserId(userId);
-        long deletedForecastCount = forecastRepository.deleteByUserId(userId);
-        long deletedMissionCardCount = missionCardRepository.deleteByUserId(userId);
+        long deletedForecastCount = forecastRepository.deleteByUser_Id(userId);
+        long deletedMissionCardCount = missionCardRepository.deleteByUser_Id(userId);
         user.resetServiceData();
 
         return new DataResetResponse(
