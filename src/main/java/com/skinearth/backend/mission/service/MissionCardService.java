@@ -18,7 +18,7 @@ public class MissionCardService {
     @Transactional(readOnly = true)
     public MissionCardResponse getTodayCard(Long userId) {
         MissionCard card = missionCardRepository
-                .findByUserIdAndIssuedDate(userId, LocalDate.now())
+                .findByUser_IdAndIssuedDate(userId, LocalDate.now())
                 .orElseThrow(() -> new IllegalStateException("오늘 발행된 미션 카드가 없습니다."));
         return MissionCardResponse.from(card);
     }
