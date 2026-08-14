@@ -4,6 +4,8 @@ import com.skinearth.backend.forecast.dto.ForecastRequestDto;
 import com.skinearth.backend.forecast.dto.ForecastResponseDto;
 import com.skinearth.backend.forecast.entity.Forecast;
 import com.skinearth.backend.forecast.repository.ForecastRepository;
+import com.skinearth.backend.user.entity.User;
+import com.skinearth.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,15 +15,20 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class ForecastService {
     private final ForecastRepository forecastRepository;
+    private final UserRepository userRepository;
 
     public ForecastResponseDto createForecast(ForecastRequestDto dto) {
         LocalDate targetDate = LocalDate.now().plusDays(1);
 
-        if(forecastRepository.existsByUserIdAndTargetDate(dto.getUserId(), targetDate)) {
+        if (forecastRepository.existsByUser_IdAndTargetDate(dto.getUserId(), targetDate)) {
             throw new IllegalArgumentException("이미 존재하는 예보입니다.");
         }
+
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
         Forecast forecast = Forecast.builder()
-                .userId(dto.getUserId())
+                .user(user)
                 .targetDate(targetDate)
                 .inputAc(dto.getInputAc())
                 .inputScreenTime(dto.getInputScreenTime())
@@ -34,10 +41,9 @@ public class ForecastService {
         return ForecastResponseDto.from(savedForecast);
     }
 
-
     public ForecastResponseDto getForecast(Long userId) {
         LocalDate targetDate = LocalDate.now().plusDays(1);
-        Forecast forecast = forecastRepository.findByUserIdAndTargetDate(userId, targetDate)
+        Forecast forecast = forecastRepository.findByUser_IdAndTargetDate(userId, targetDate)
                 .orElseThrow(() -> new IllegalArgumentException("해당 예보를 찾을 수 없습니다."));
         return ForecastResponseDto.from(forecast);
     }

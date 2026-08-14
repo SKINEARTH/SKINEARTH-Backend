@@ -1,5 +1,6 @@
 package com.skinearth.backend.mission.entity;
 
+import com.skinearth.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,8 +24,9 @@ public class MissionCard {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;   // User 엔티티 올라오면 @ManyToOne 전환
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id", nullable = false)
@@ -43,9 +45,9 @@ public class MissionCard {
     private Boolean isCompleted;
 
     @Builder
-    public MissionCard(Long userId, MissionTemplate template, LocalDate issuedDate,
+    public MissionCard(User user, MissionTemplate template, LocalDate issuedDate,
                        String title, String description, Boolean isCompleted) {
-        this.userId = userId;
+        this.user = user;
         this.template = template;
         this.issuedDate = issuedDate;
         this.title = title;

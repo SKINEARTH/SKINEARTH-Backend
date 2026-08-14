@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 public interface MissionCardRepository extends JpaRepository<MissionCard, Long> {
-    Optional<MissionCard> findByUserIdAndIssuedDate(Long userId, LocalDate issuedDate);
+    Optional<MissionCard> findByUser_IdAndIssuedDate(Long userId, LocalDate issuedDate);
 
-    long deleteByUserId(Long userId);
+    long deleteByUser_Id(Long userId);
 }
