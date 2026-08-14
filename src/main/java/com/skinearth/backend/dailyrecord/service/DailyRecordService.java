@@ -23,6 +23,7 @@ public class DailyRecordService {
     private final DailyRecordRepository dailyRecordRepository;
     private final UserRepository userRepository;
     private final Clock clock;
+    private final RecordStreakCalculator recordStreakCalculator;
 
     @Transactional
     public DailyRecordResponse createToday(Long userId, DailyRecordRequest request) {
@@ -45,14 +46,16 @@ public class DailyRecordService {
                 .build();
 
         try {
-            return DailyRecordResponse.from(dailyRecordRepository.saveAndFlush(record));
+            DailyRecord savedRecord = dailyRecordRepository.saveAndFlush(record);
+            return responseWithStreak(savedRecord, userId, today);
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException("오늘의 기록이 이미 존재합니다.");
         }
     }
 
     public DailyRecordResponse getToday(Long userId) {
-        return DailyRecordResponse.from(findToday(userId));
+        LocalDate today = LocalDate.now(clock);
+        return responseWithStreak(findToday(userId), userId, today);
     }
 
     @Transactional
@@ -67,7 +70,7 @@ public class DailyRecordService {
                 request.skinCondition(),
                 request.symptoms()
         );
-        return DailyRecordResponse.from(record);
+        return responseWithStreak(record, userId, LocalDate.now(clock));
     }
 
     private User findUser(Long userId) {
@@ -78,5 +81,13 @@ public class DailyRecordService {
     private DailyRecord findToday(Long userId) {
         return dailyRecordRepository.findByUserIdAndRecordDate(userId, LocalDate.now(clock))
                 .orElseThrow(() -> new NotFoundException("오늘의 기록을 찾을 수 없습니다."));
+    }
+
+    private DailyRecordResponse responseWithStreak(DailyRecord record, Long userId, LocalDate today) {
+        int currentStreak = recordStreakCalculator.calculate(
+                dailyRecordRepository.findRecordDatesUpTo(userId, today),
+                today
+        );
+        return DailyRecordResponse.from(record, currentStreak);
     }
 }

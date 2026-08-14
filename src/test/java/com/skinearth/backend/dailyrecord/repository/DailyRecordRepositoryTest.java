@@ -49,6 +49,18 @@ class DailyRecordRepositoryTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    void findsRecordDatesInDescendingOrderUpToGivenDate() {
+        User user = userRepository.save(user("dates@example.com"));
+        LocalDate today = LocalDate.of(2026, 8, 14);
+        dailyRecordRepository.save(record(user, today.minusDays(2)));
+        dailyRecordRepository.save(record(user, today));
+        dailyRecordRepository.saveAndFlush(record(user, today.minusDays(1)));
+
+        assertThat(dailyRecordRepository.findRecordDatesUpTo(user.getId(), today))
+                .containsExactly(today, today.minusDays(1), today.minusDays(2));
+    }
+
     private User user(String email) {
         return User.builder()
                 .email(email)
