@@ -21,6 +21,8 @@ class UserRepositoryTest {
     @Test
     void savesAndFindsUser() {
         User user = User.builder()
+                .email("user@example.com")
+                .passwordHash("encoded-password")
                 .nickname("스킨어스")
                 .userStatus(UserStatus.EMPLOYEE)
                 .skinConcern("민감함")
@@ -35,6 +37,7 @@ class UserRepositoryTest {
         assertThat(userRepository.findById(savedUser.getId()))
                 .hasValueSatisfying(found -> {
                     assertThat(found.getNickname()).isEqualTo("스킨어스");
+                    assertThat(found.getEmail()).isEqualTo("user@example.com");
                     assertThat(found.getUserStatus()).isEqualTo(UserStatus.EMPLOYEE);
                     assertThat(found.isResearchDataAgreed()).isFalse();
                     assertThat(found.getStage()).isZero();

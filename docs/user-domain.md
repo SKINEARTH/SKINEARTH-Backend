@@ -9,9 +9,11 @@
 | Java 필드 | DB 컬럼 | 설명 |
 | --- | --- | --- |
 | `id` | `id` | 사용자 PK |
-| `nickname` | `nickname` | 사용자 닉네임 |
-| `userStatus` | `user_status` | `EMPLOYEE`, `STUDENT`, `OTHER` |
-| `skinConcern` | `skin_concern` | 가장 큰 피부 고민. 선택지 확정 전까지 문자열로 저장 |
+| `email` | `email` | 로그인 이메일, 대소문자 무시 유일값 |
+| `passwordHash` | `password_hash` | BCrypt 단방향 암호화 비밀번호 |
+| `nickname` | `nickname` | 사용자 닉네임. 가입 직후에는 null 가능 |
+| `userStatus` | `user_status` | `EMPLOYEE`, `STUDENT`, `OTHER`. 가입 직후에는 null 가능 |
+| `skinConcern` | `skin_concern` | 가장 큰 피부 고민. 가입 직후에는 null 가능 |
 | `serviceTermsAgreed` | `service_terms_agreed` | 서비스 이용약관 필수 동의 |
 | `sensitiveDataAgreed` | `sensitive_data_agreed` | 건강·생활습관 관련 민감정보 처리 필수 동의 |
 | `researchDataAgreed` | `research_data_agreed` | 연구목적 데이터 공유 선택 동의 |
@@ -25,7 +27,7 @@
 
 ## 인증 관련
 
-- 이메일 회원가입·로그인은 #18에서 구현합니다.
+- 이메일 회원가입·로그인은 #18에서 구현합니다. 상세 계약은 [이메일 인증 협업 가이드](auth.md)를 참고합니다.
 - 카카오 로그인은 최신 화면 범위에 포함되지 않아 #19를 진행하지 않기로 결정했습니다.
 - 인증 정보의 테이블 구조는 #18에서 정의하며, 시연용 우회 로그인을 포함하지 않습니다.
 
