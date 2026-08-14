@@ -116,6 +116,14 @@ public class User {
         completePersonalization(nickname, userStatus, skinConcerns);
     }
 
+    public void resetServiceData() {
+        this.nickname = null;
+        this.userStatus = null;
+        this.skinConcerns.clear();
+        this.personalizationCompleted = false;
+        this.stage = 1;
+    }
+
     private void replaceSkinConcerns(Collection<SkinConcern> skinConcerns) {
         this.skinConcerns.clear();
         if (skinConcerns != null) {
