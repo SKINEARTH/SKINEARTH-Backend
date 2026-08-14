@@ -26,6 +26,8 @@ class UserTest {
     @Test
     void requiresServiceTermsAgreement() {
         User user = User.builder()
+                .email("user@example.com")
+                .passwordHash("encoded-password")
                 .nickname("스킨어스")
                 .userStatus(UserStatus.EMPLOYEE)
                 .skinConcern("건조함")
@@ -39,7 +41,7 @@ class UserTest {
     }
 
     @Test
-    void allowsThirdPartyAgreementToBeDeclined() {
+    void allowsResearchDataAgreementToBeDeclined() {
         User user = validUser();
 
         assertThat(validator.validate(user)).isEmpty();
@@ -48,6 +50,8 @@ class UserTest {
 
     private User validUser() {
         return User.builder()
+                .email("user@example.com")
+                .passwordHash("encoded-password")
                 .nickname("스킨어스")
                 .userStatus(UserStatus.STUDENT)
                 .skinConcern("트러블")
