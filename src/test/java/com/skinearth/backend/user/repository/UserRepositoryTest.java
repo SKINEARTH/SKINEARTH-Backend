@@ -49,6 +49,7 @@ class UserRepositoryTest {
                     assertThat(found.isPersonalizationCompleted()).isTrue();
                     assertThat(found.isResearchDataAgreed()).isFalse();
                     assertThat(found.getStage()).isOne();
+                    assertThat(found.getCreatedAt()).isNotNull();
                 });
     }
 }

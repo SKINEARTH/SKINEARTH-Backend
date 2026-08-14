@@ -20,7 +20,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -76,6 +78,10 @@ public class User {
     @Max(3)
     @Column(nullable = false)
     private int stage;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
     @Builder
     public User(String email, String passwordHash, String nickname, UserStatus userStatus,
