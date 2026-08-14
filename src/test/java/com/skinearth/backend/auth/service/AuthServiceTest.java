@@ -88,6 +88,7 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(3600L);
+        assertThat(response.personalizationCompleted()).isFalse();
     }
 
     @Test
