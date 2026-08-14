@@ -1,9 +1,13 @@
 package com.skinearth.backend.dailyrecord.dto;
 
+import com.skinearth.backend.dailyrecord.entity.SymptomTag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.AssertTrue;
+
+import java.util.HashSet;
+import java.util.List;
 
 public record DailyRecordRequest(
         @Min(value = 1, message = "에어컨 노출은 1 이상이어야 합니다.")
@@ -29,7 +33,9 @@ public record DailyRecordRequest(
         @NotNull(message = "피부 컨디션을 입력해주세요.")
         @Min(value = 1, message = "피부 컨디션은 1 이상이어야 합니다.")
         @Max(value = 5, message = "피부 컨디션은 5 이하여야 합니다.")
-        Integer skinCondition
+        Integer skinCondition,
+
+        List<@NotNull(message = "증상 태그 값은 null일 수 없습니다.") SymptomTag> symptoms
 ) {
     @AssertTrue(message = "환경 요인을 최소 1개 이상 입력해주세요.")
     public boolean isAnyEnvironmentFactorProvided() {
@@ -38,5 +44,17 @@ public record DailyRecordRequest(
                 || sleepHours != null
                 || stressLevel != null
                 || mealRegularity != null;
+    }
+
+    @AssertTrue(message = "증상 태그를 중복으로 선택할 수 없습니다.")
+    public boolean isSymptomSelectionUnique() {
+        return symptoms == null || new HashSet<>(symptoms).size() == symptoms.size();
+    }
+
+    @AssertTrue(message = "증상 없음은 다른 증상과 함께 선택할 수 없습니다.")
+    public boolean isNoneSelectedAlone() {
+        return symptoms == null
+                || !symptoms.contains(SymptomTag.NONE)
+                || symptoms.size() == 1;
     }
 }

@@ -41,6 +41,7 @@ public class DailyRecordService {
                 .stressLevel(request.stressLevel())
                 .mealRegularity(request.mealRegularity())
                 .skinCondition(request.skinCondition())
+                .symptoms(request.symptoms())
                 .build();
 
         try {
@@ -63,7 +64,8 @@ public class DailyRecordService {
                 request.sleepHours(),
                 request.stressLevel(),
                 request.mealRegularity(),
-                request.skinCondition()
+                request.skinCondition(),
+                request.symptoms()
         );
         return DailyRecordResponse.from(record);
     }
