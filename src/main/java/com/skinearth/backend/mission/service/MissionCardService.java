@@ -2,12 +2,15 @@ package com.skinearth.backend.mission.service;
 
 import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.common.exception.NotFoundException;
+import com.skinearth.backend.mission.ai.MissionCardGenerator;
 import com.skinearth.backend.mission.dto.MissionCardResponse;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
 import com.skinearth.backend.mission.dto.WeeklyMissionHistoryResponse;
 import com.skinearth.backend.mission.entity.MissionCard;
 import com.skinearth.backend.mission.repository.MissionCardRepository;
+import com.skinearth.backend.user.entity.User;
+import com.skinearth.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,15 +27,24 @@ import java.util.List;
 public class MissionCardService {
 
     private final MissionCardRepository missionCardRepository;
+    private final UserRepository userRepository;
+    private final MissionCardGenerator missionCardGenerator;
     private final Clock clock;
     private final BadgeService badgeService;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public MissionCardResponse getTodayCard(Long userId) {
-        MissionCard card = missionCardRepository
-                .findByUser_IdAndIssuedDate(userId, LocalDate.now(clock))
-                .orElseThrow(() -> new NotFoundException("오늘 발행된 미션 카드가 없습니다."));
-        return MissionCardResponse.from(card);
+        LocalDate today = LocalDate.now(clock);
+        return missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
+                .map(MissionCardResponse::from)
+                .orElseGet(() -> generateAndSaveTodayCard(userId, today));
+    }
+
+    private MissionCardResponse generateAndSaveTodayCard(Long userId, LocalDate today) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+        MissionCard card = missionCardGenerator.generate(user, today);
+        return MissionCardResponse.from(missionCardRepository.save(card));
     }
 
     @Transactional
