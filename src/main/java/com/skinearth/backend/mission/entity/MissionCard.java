@@ -69,4 +69,10 @@ public class MissionCard {
         this.isCompleted = true;
         this.completedAt = completedAt;
     }
+
+    public void updateContent(MissionTemplate template, String title, String description) {
+        this.template = template;
+        this.title = title;
+        this.description = description;
+    }
 }

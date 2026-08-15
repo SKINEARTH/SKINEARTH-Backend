@@ -2,6 +2,7 @@ package com.skinearth.backend.common.exception;
 
 import com.skinearth.backend.auth.exception.UnauthorizedException;
 import com.skinearth.backend.common.response.ApiResponse;
+import com.skinearth.backend.mission.exception.MissionActionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -30,6 +31,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.fail(404, e.getMessage()));
+    }
+
+    @ExceptionHandler(MissionActionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissionAction(MissionActionException e) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail(409, e.getCode(), e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

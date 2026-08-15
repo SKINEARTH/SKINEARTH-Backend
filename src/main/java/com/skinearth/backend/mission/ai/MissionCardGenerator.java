@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @RequiredArgsConstructor
@@ -30,34 +32,27 @@ public class MissionCardGenerator {
         return buildCard(user, today, cause, false, false);
     }
 
-    public MissionSlotResult generateAlternative(User user, LocalDate today, String excludeCause, boolean forceEasy) {
-        String cause = slotSelector.determineTodayCause(user, today, excludeCause);
-        boolean preferEasy = forceEasy || slotSelector.hasRecentFailure(user.getId(), today);
-        List<MissionTemplate> candidates = slotSelector.findCandidates(cause, preferEasy);
+    public MissionSlotResult generateAlternative(
+            User user,
+            LocalDate today,
+            String currentCategory,
+            Set<String> excludedCategories,
+            Set<String> excludedActionTypes
+    ) {
+        List<MissionTemplate> candidates = slotSelector.findAlternativeCandidates(
+                user, today, currentCategory, excludedCategories, excludedActionTypes
+        );
+        return selectAlternative("다른 미션", candidates);
+    }
 
-        if (candidates.isEmpty()) {
-            throw new IllegalStateException("사용 가능한 미션 후보가 없습니다: " + cause);
-        }
-
-        MissionSlotResult result = trySelectWithAi(cause, candidates);
-        if (result == null) {
-            result = fallbackSelect(cause, candidates);
-        }
-        return result;
+    public MissionSlotResult generateWithFixedActionType(String cause, String actionType) {
+        return selectAlternative(cause, slotSelector.findEasyCandidates(cause, actionType));
     }
 
     private MissionCard buildCard(User user, LocalDate today, String cause, boolean forceEasy, boolean isReplaced) {
         boolean preferEasy = forceEasy || slotSelector.hasRecentFailure(user.getId(), today);
         List<MissionTemplate> candidates = slotSelector.findCandidates(cause, preferEasy);
-
-        if (candidates.isEmpty()) {
-            throw new IllegalStateException("사용 가능한 미션 후보가 없습니다: " + cause);
-        }
-
-        MissionSlotResult result = trySelectWithAi(cause, candidates);
-        if (result == null) {
-            result = fallbackSelect(cause, candidates);
-        }
+        MissionSlotResult result = selectAlternative(cause, candidates);
 
         return MissionCard.builder()
                 .user(user)
@@ -68,6 +63,18 @@ public class MissionCardGenerator {
                 .isCompleted(false)
                 .isReplaced(isReplaced)
                 .build();
+    }
+
+    private MissionSlotResult selectAlternative(String cause, List<MissionTemplate> candidates) {
+        if (candidates.isEmpty()) {
+            throw new NoMissionCandidateException();
+        }
+
+        MissionSlotResult result = trySelectWithAi(cause, candidates);
+        if (result == null) {
+            result = fallbackSelect(cause, candidates);
+        }
+        return result;
     }
 
     private MissionSlotResult trySelectWithAi(String cause, List<MissionTemplate> candidates) {
@@ -96,7 +103,7 @@ public class MissionCardGenerator {
     }
 
     private MissionSlotResult fallbackSelect(String cause, List<MissionTemplate> candidates) {
-        MissionTemplate template = candidates.get(0);
+        MissionTemplate template = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
         String title = template.getActionType();
         String description = "%s가 오늘의 주요 원인으로 잡혔어요. %s 미션으로 관리해 보세요."
                 .formatted(cause, template.getActionType());
@@ -104,4 +111,7 @@ public class MissionCardGenerator {
     }
 
     public record MissionSlotResult(MissionTemplate template, String title, String description) {}
+
+    public static class NoMissionCandidateException extends RuntimeException {
+    }
 }
