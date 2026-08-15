@@ -96,6 +96,32 @@ SET estimated_minutes = CASE action_type
     ELSE estimated_minutes
 END;
 
+-- 미션 템플릿별 화면 표시 제목
+UPDATE mission_template
+SET display_title = CONCAT(
+    CASE timing
+        WHEN '지금' THEN '지금'
+        WHEN '점심후' THEN '점심 후'
+        WHEN '퇴근전' THEN '퇴근 전'
+        ELSE timing
+    END,
+    ' ',
+    CASE intensity
+        WHEN '가벼운' THEN '가볍게'
+        WHEN '집중' THEN '집중해서'
+        ELSE intensity
+    END,
+    ' ',
+    CASE action_type
+        WHEN '카페인 오후 섭취 자제 알림' THEN '카페인 오후 섭취 자제하기'
+        WHEN '5분 심호흡' THEN '5분 심호흡하기'
+        WHEN '짧은 산책' THEN '짧은 산책하기'
+        WHEN '식사 알림 설정' THEN '식사 알림 설정하기'
+        WHEN '건강 간식 제안' THEN '건강 간식 챙기기'
+        ELSE action_type
+    END
+);
+
 INSERT IGNORE INTO badge (stage, name, description, condition_description, record_count_threshold, streak_threshold, mission_count_threshold) VALUES
 (1, '관측자', '가장 기본적인 형태의 신입사원 PP입니다. 좋아하는 음료는 아메리카노라고 해요.', '궤도를 10건 이상 기록하세요', NULL, NULL, NULL),
 (2, '탐사자', '직진할 줄 아는 사회인 PP입니다. 야근이 늘어 숙면을 취하지 못해 고민이라고 해요.', '궤도 7일 연속 기록하거나, 탐사 미션 10회 완료하면 진급해요', 10, NULL, NULL),

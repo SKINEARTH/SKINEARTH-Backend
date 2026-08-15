@@ -95,7 +95,7 @@ public class MissionCardGenerator {
             }
 
             MissionTemplate selected = candidates.get(selection.selectedIndex());
-            return new MissionSlotResult(selected, selected.getActionType(), selection.description());
+            return new MissionSlotResult(selected, selected.getDisplayTitle(), selection.description());
         } catch (Exception exception) {
             log.warn("AI 슬롯 선택 실패, 규칙 기반 폴백으로 대체합니다.", exception);
             return null;
@@ -104,7 +104,7 @@ public class MissionCardGenerator {
 
     private MissionSlotResult fallbackSelect(List<MissionTemplate> candidates) {
         MissionTemplate template = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
-        String title = template.getActionType();
+        String title = template.getDisplayTitle();
         String description = "오늘은 %s 미션을 가볍게 실천해 보세요."
                 .formatted(template.getActionType());
         return new MissionSlotResult(template, title, description);
