@@ -77,6 +77,25 @@ INSERT IGNORE INTO mission_template (cause, category, action_type, intensity, ti
 ('식사규칙성', '규칙적 식사', '건강 간식 제안', '집중', '점심후', true),
 ('식사규칙성', '규칙적 식사', '건강 간식 제안', '집중', '퇴근전', true);
 
+-- 미션 템플릿별 예상 소요 시간(분)
+UPDATE mission_template
+SET estimated_minutes = CASE action_type
+    WHEN '미스트 리터치' THEN 3
+    WHEN '핸드/바디 로션 덧바르기' THEN 1
+    WHEN '블루라이트 필터 켜기' THEN 1
+    WHEN '실내 습도 체크하기' THEN 2
+    WHEN '얼굴 만지지 않기 리마인드' THEN 1
+    WHEN '카페인 오후 섭취 자제 알림' THEN 1
+    WHEN '취침 전 스트레칭' THEN 5
+    WHEN '스크린 알림 끄기' THEN 1
+    WHEN '5분 심호흡' THEN 5
+    WHEN '짧은 산책' THEN 10
+    WHEN '좋아하는 음악 3분 듣기' THEN 3
+    WHEN '식사 알림 설정' THEN 1
+    WHEN '건강 간식 제안' THEN 3
+    ELSE estimated_minutes
+END;
+
 INSERT IGNORE INTO badge (stage, name, description, condition_description, record_count_threshold, streak_threshold, mission_count_threshold) VALUES
 (1, '관측자', '가장 기본적인 형태의 신입사원 PP입니다. 좋아하는 음료는 아메리카노라고 해요.', '궤도를 10건 이상 기록하세요', NULL, NULL, NULL),
 (2, '탐사자', '직진할 줄 아는 사회인 PP입니다. 야근이 늘어 숙면을 취하지 못해 고민이라고 해요.', '궤도 7일 연속 기록하거나, 탐사 미션 10회 완료하면 진급해요', 10, NULL, NULL),
