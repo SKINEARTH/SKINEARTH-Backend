@@ -18,11 +18,16 @@ public class ForecastFactor {
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30)
     private ForecastFactorType factor;
     private Integer priorityScore;
+    private Double normalizedRiskValue;
     @Column(nullable = false) private int factorRank;
     @Column(nullable = false) private boolean primaryFactor;
 
     ForecastFactor(Forecast forecast, ColdStartFactorResult result, int rank) {
-        this.forecast = forecast; this.factor = result.factor(); this.priorityScore = result.priorityScore();
-        this.factorRank = rank; this.primaryFactor = true;
+        this.forecast = forecast;
+        this.factor = result.factor();
+        this.priorityScore = result.priorityScore();
+        this.normalizedRiskValue = result.normalizedRiskValue();
+        this.factorRank = rank;
+        this.primaryFactor = true;
     }
 }
