@@ -7,6 +7,7 @@ import com.skinearth.backend.forecast.ai.ForecastCommentPromptBuilder;
 import com.skinearth.backend.forecast.ai.GeminiClient;
 import com.skinearth.backend.forecast.coldstart.ColdStartCalculator;
 import com.skinearth.backend.forecast.coldstart.ColdStartResult;
+import com.skinearth.backend.forecast.coldstart.ForecastFactorType;
 import com.skinearth.backend.forecast.dto.ForecastRequestDto;
 import com.skinearth.backend.forecast.dto.ForecastResponseDto;
 import com.skinearth.backend.forecast.entity.Forecast;
@@ -25,6 +26,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -36,6 +38,14 @@ public class ForecastService {
     private static final int DATA_BASED_RECORD_COUNT = 10;
     private static final double SLEEP_OPTIMAL_HOURS = 7.0;
     private static final String FALLBACK_COMMENT = "아직 데이터를 분석하는 중이에요. 오늘도 꾸준히 기록하며 피부 컨디션을 함께 살펴봐요!";
+    private static final Map<ForecastFactorType, String> FACTOR_NAME_KO = Map.of(
+            ForecastFactorType.AC, "냉난방",
+            ForecastFactorType.SCREEN_TIME, "스크린타임",
+            ForecastFactorType.SLEEP, "수면",
+            ForecastFactorType.STRESS, "스트레스",
+            ForecastFactorType.MEAL_REGULARITY, "식사규칙성"
+    );
+
     private final ForecastRepository forecastRepository;
     private final UserRepository userRepository;
     private final DailyRecordRepository dailyRecordRepository;
@@ -64,8 +74,8 @@ public class ForecastService {
             var first = result.primaryFactors().get(0);
             var second = result.primaryFactors().size() > 1 ? result.primaryFactors().get(1) : null;
             forecast.applyRiskResult(result.riskScore(), result.riskLevel(), "COLD_START", (int) recordCount,
-                    first.factor().name(), levelOf(first.normalizedRiskValue()),
-                    second == null ? null : second.factor().name(),
+                    FACTOR_NAME_KO.get(first.factor()), levelOf(first.normalizedRiskValue()),
+                    second == null ? null : FACTOR_NAME_KO.get(second.factor()),
                     second == null ? null : levelOf(second.normalizedRiskValue()));
             forecast.addPrimaryFactors(result.primaryFactors());
         } else {
@@ -91,10 +101,10 @@ public class ForecastService {
                 userId, LocalDate.now(clock).minusDays(30), LocalDate.now(clock));
         List<FactorCorrelation> all = new ArrayList<>();
         all.add(factor("냉난방", records, DailyRecord::getAcLevel, request.inputAc(), FactorType.NORMAL));
-        all.add(factor("화면 노출", records, DailyRecord::getScreenTime, request.inputScreenTime(), FactorType.NORMAL));
+        all.add(factor("스크린타임", records, DailyRecord::getScreenTime, request.inputScreenTime(), FactorType.NORMAL));
         all.add(factor("수면", records, DailyRecord::getSleepHours, request.inputSleepHours(), FactorType.SLEEP));
         all.add(factor("스트레스", records, DailyRecord::getStressLevel, request.inputStress(), FactorType.NORMAL));
-        all.add(factor("식사 규칙성", records, DailyRecord::getMealRegularity, request.inputMeal(), FactorType.INVERSE));
+        all.add(factor("식사규칙성", records, DailyRecord::getMealRegularity, request.inputMeal(), FactorType.INVERSE));
         List<FactorCorrelation> primary = riskScoreCalculator.selectPrimaryFactors(all);
         if (primary.isEmpty()) {
             forecast.applyRiskResult(50, "보통", "데이터 기반", (int) recordCount, null, null, null, null);
