@@ -1,5 +1,6 @@
 package com.skinearth.backend.dailyrecord.service;
 
+import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.dailyrecord.dto.DailyRecordRequest;
 import com.skinearth.backend.dailyrecord.dto.DailyRecordResponse;
