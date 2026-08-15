@@ -64,7 +64,7 @@ class MissionCardServiceTest {
         pendingStore = new PendingMissionCandidateStore();
         preferenceStore = new TodayMissionPreferenceStore();
         missionCardService = new MissionCardService(
-                missionCardRepository, userRepository, missionCardGenerator,
+                missionCardRepository, userRepository, missionCardGenerator, new MissionStreakCalculator(),
                 pendingStore, preferenceStore, clock, badgeService
         );
         user = User.builder()
@@ -169,6 +169,40 @@ class MissionCardServiceTest {
         assertThat(response.issuedCount()).isZero();
         assertThat(response.completedCount()).isZero();
         assertThat(response.completionRatePercent()).isZero();
+    }
+
+    @Test
+    void includesStreakWhenTodayMissionIsRetrievedBeforeCompletion() {
+        MissionCard current = card(TODAY, false, false);
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+        when(missionCardRepository.findCompletedDatesUpTo(USER_ID, TODAY)).thenReturn(List.of(
+                TODAY.minusDays(1),
+                TODAY.minusDays(2)
+        ));
+
+        var response = missionCardService.getTodayCard(USER_ID);
+
+        assertThat(response.streak()).isEqualTo(2);
+    }
+
+    @Test
+    void includesStreakWhenAlternativeMissionIsConfirmed() {
+        MissionCard current = card(TODAY, false, false);
+        MissionTemplate alternativeTemplate = template("cause-b", "action-b", "집중");
+        pendingStore.save(USER_ID, new PendingMissionCandidateStore.PendingCandidate(
+                alternativeTemplate, "alternative", "alternative description"
+        ));
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+        when(missionCardRepository.save(current)).thenReturn(current);
+        when(missionCardRepository.findCompletedDatesUpTo(USER_ID, TODAY)).thenReturn(List.of(
+                TODAY.minusDays(1),
+                TODAY.minusDays(2)
+        ));
+
+        var response = missionCardService.confirmAlternative(USER_ID);
+
+        assertThat(response.streak()).isEqualTo(2);
+        assertThat(response.title()).isEqualTo("alternative");
     }
 
     @Test
