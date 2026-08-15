@@ -2,6 +2,8 @@ package com.skinearth.backend.mission.repository;
 
 import com.skinearth.backend.mission.entity.MissionCard;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,4 +23,17 @@ public interface MissionCardRepository extends JpaRepository<MissionCard, Long> 
     long deleteByUser_Id(Long userId);
 
     long countByUser_IdAndIsCompletedTrue(Long userId);
+
+    @Query("""
+            select card.issuedDate
+            from MissionCard card
+            where card.user.id = :userId
+              and card.isCompleted = true
+              and card.issuedDate <= :date
+            order by card.issuedDate desc
+            """)
+    List<LocalDate> findCompletedDatesUpTo(
+            @Param("userId") Long userId,
+            @Param("date") LocalDate date
+    );
 }

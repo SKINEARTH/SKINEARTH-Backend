@@ -13,9 +13,10 @@ public record MissionCardResponse(
         LocalDate issuedDate,
         Boolean isCompleted,
         Boolean isReplaced,
-        LocalDateTime completedAt
+        LocalDateTime completedAt,
+        int streak
 ) {
-    public static MissionCardResponse from(MissionCard card) {
+    public static MissionCardResponse from(MissionCard card, int streak) {
         return new MissionCardResponse(
                 card.getId(),
                 card.getTemplate().getCategory(),
@@ -24,7 +25,8 @@ public record MissionCardResponse(
                 card.getIssuedDate(),
                 card.getIsCompleted(),
                 card.getIsReplaced(),
-                card.getCompletedAt()
+                card.getCompletedAt(),
+                streak
         );
     }
 }

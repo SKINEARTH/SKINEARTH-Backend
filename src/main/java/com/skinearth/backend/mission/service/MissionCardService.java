@@ -35,6 +35,7 @@ public class MissionCardService {
     private final MissionCardRepository missionCardRepository;
     private final UserRepository userRepository;
     private final MissionCardGenerator missionCardGenerator;
+    private final MissionStreakCalculator missionStreakCalculator;
     private final PendingMissionCandidateStore pendingStore;
     private final TodayMissionPreferenceStore preferenceStore;
     private final Clock clock;
@@ -43,15 +44,15 @@ public class MissionCardService {
     @Transactional
     public MissionCardResponse getTodayCard(Long userId) {
         LocalDate today = LocalDate.now(clock);
-        return missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
-                .map(MissionCardResponse::from)
+        MissionCard card = missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
                 .orElseGet(() -> generateAndSaveTodayCard(userId, today));
+        return responseWithStreak(card, userId, today);
     }
 
-    private MissionCardResponse generateAndSaveTodayCard(Long userId, LocalDate today) {
+    private MissionCard generateAndSaveTodayCard(Long userId, LocalDate today) {
         User user = findUser(userId);
         MissionCard card = missionCardGenerator.generate(user, today);
-        return MissionCardResponse.from(missionCardRepository.save(card));
+        return missionCardRepository.save(card);
     }
 
     @Transactional(readOnly = true)
@@ -123,7 +124,7 @@ public class MissionCardService {
         pendingStore.clear(userId);
         preferenceStore.clearSeenActionTypes(userId, today);
 
-        return MissionCardResponse.from(missionCardRepository.save(current));
+        return responseWithStreak(missionCardRepository.save(current), userId, today);
     }
 
     @Transactional
@@ -170,6 +171,13 @@ public class MissionCardService {
     private User findUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+    }
+
+    private MissionCardResponse responseWithStreak(MissionCard card, Long userId, LocalDate today) {
+        int streak = missionStreakCalculator.calculate(
+                missionCardRepository.findCompletedDatesUpTo(userId, today), today
+        );
+        return MissionCardResponse.from(card, streak);
     }
 
     private MissionCardGenerator.MissionSlotResult generateAlternative(
