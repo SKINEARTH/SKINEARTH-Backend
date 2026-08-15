@@ -1,5 +1,6 @@
 package com.skinearth.backend.mission.service;
 
+import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
@@ -35,6 +36,8 @@ class MissionCardServiceTest {
 
     @Mock
     private MissionCardRepository missionCardRepository;
+    @Mock
+    private BadgeService badgeService;
 
     private MissionCardService missionCardService;
     private User user;
@@ -43,7 +46,7 @@ class MissionCardServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-08-14T03:00:00Z"), ZoneId.of("Asia/Seoul"));
-        missionCardService = new MissionCardService(missionCardRepository, clock);
+        missionCardService = new MissionCardService(missionCardRepository, clock, badgeService);
         user = User.builder()
                 .email("user@example.com")
                 .passwordHash("encoded-password")
