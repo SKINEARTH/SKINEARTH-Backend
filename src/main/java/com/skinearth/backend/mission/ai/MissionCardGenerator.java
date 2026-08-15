@@ -27,7 +27,27 @@ public class MissionCardGenerator {
 
     public MissionCard generate(User user, LocalDate today) {
         String cause = slotSelector.determineTodayCause(user, today);
-        boolean preferEasy = slotSelector.hasRecentFailure(user.getId(), today);
+        return buildCard(user, today, cause, false, false);
+    }
+
+    public MissionSlotResult generateAlternative(User user, LocalDate today, String excludeCause, boolean forceEasy) {
+        String cause = slotSelector.determineTodayCause(user, today, excludeCause);
+        boolean preferEasy = forceEasy || slotSelector.hasRecentFailure(user.getId(), today);
+        List<MissionTemplate> candidates = slotSelector.findCandidates(cause, preferEasy);
+
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("사용 가능한 미션 후보가 없습니다: " + cause);
+        }
+
+        MissionSlotResult result = trySelectWithAi(cause, candidates);
+        if (result == null) {
+            result = fallbackSelect(cause, candidates);
+        }
+        return result;
+    }
+
+    private MissionCard buildCard(User user, LocalDate today, String cause, boolean forceEasy, boolean isReplaced) {
+        boolean preferEasy = forceEasy || slotSelector.hasRecentFailure(user.getId(), today);
         List<MissionTemplate> candidates = slotSelector.findCandidates(cause, preferEasy);
 
         if (candidates.isEmpty()) {
@@ -46,7 +66,7 @@ public class MissionCardGenerator {
                 .title(result.title())
                 .description(result.description())
                 .isCompleted(false)
-                .isReplaced(false)
+                .isReplaced(isReplaced)
                 .build();
     }
 
@@ -83,5 +103,5 @@ public class MissionCardGenerator {
         return new MissionSlotResult(template, title, description);
     }
 
-    private record MissionSlotResult(MissionTemplate template, String title, String description) {}
+    public record MissionSlotResult(MissionTemplate template, String title, String description) {}
 }

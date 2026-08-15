@@ -43,6 +43,10 @@ public class MissionSlotSelector {
     private final MissionPriorityCalculator priorityCalculator;
 
     public String determineTodayCause(User user, LocalDate today) {
+        return determineTodayCause(user, today, null);
+    }
+
+    public String determineTodayCause(User user, LocalDate today, String excludeCause) {
         Map<MissionPriorityCalculator.MissionCategory, Integer> scores =
                 priorityCalculator.calculate(user.getUserStatus(), user.getSkinConcerns());
 
@@ -52,6 +56,13 @@ public class MissionSlotSelector {
             MissionPriorityCalculator.MissionCategory primaryCategory = CAUSE_TO_CATEGORY.get(primaryCause);
             if (primaryCategory != null) {
                 scores.merge(primaryCategory, PRIMARY_FACTOR_BONUS, Integer::sum);
+            }
+        }
+
+        if (excludeCause != null) {
+            MissionPriorityCalculator.MissionCategory excludedCategory = CAUSE_TO_CATEGORY.get(excludeCause);
+            if (excludedCategory != null) {
+                scores.remove(excludedCategory);
             }
         }
 
