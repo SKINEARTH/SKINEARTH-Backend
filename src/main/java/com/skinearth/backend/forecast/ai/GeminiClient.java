@@ -25,7 +25,7 @@ public class GeminiClient {
 
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(5000);
-        requestFactory.setReadTimeout(15000);
+        requestFactory.setReadTimeout(30000);
 
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
