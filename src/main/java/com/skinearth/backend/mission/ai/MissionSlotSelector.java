@@ -1,6 +1,5 @@
 package com.skinearth.backend.mission.ai;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skinearth.backend.forecast.entity.Forecast;
 import com.skinearth.backend.forecast.repository.ForecastRepository;
 import com.skinearth.backend.mission.entity.MissionTemplate;
