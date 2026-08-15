@@ -14,6 +14,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @RequiredArgsConstructor
@@ -43,24 +45,57 @@ public class MissionSlotSelector {
     private final MissionPriorityCalculator priorityCalculator;
 
     public String determineTodayCause(User user, LocalDate today) {
-        Map<MissionPriorityCalculator.MissionCategory, Integer> scores =
-                priorityCalculator.calculate(user.getUserStatus(), user.getSkinConcerns());
+        return determineTodayCause(user, today, Set.of());
+    }
 
-        Optional<Forecast> forecast = forecastRepository.findByUser_IdAndTargetDate(user.getId(), today);
-        if (forecast.isPresent() && forecast.get().getPrimaryFactor1Name() != null) {
-            String primaryCause = forecast.get().getPrimaryFactor1Name();
-            MissionPriorityCalculator.MissionCategory primaryCategory = CAUSE_TO_CATEGORY.get(primaryCause);
-            if (primaryCategory != null) {
-                scores.merge(primaryCategory, PRIMARY_FACTOR_BONUS, Integer::sum);
-            }
-        }
+    public String determineTodayCause(User user, LocalDate today, String excludeCause) {
+        return determineTodayCause(user, today,
+                excludeCause == null ? Set.of() : Set.of(excludeCause));
+    }
+
+    public String determineTodayCause(User user, LocalDate today, Set<String> excludeCauses) {
+        Map<MissionPriorityCalculator.MissionCategory, Integer> scores = calculateScores(user, today);
+
+        excludeCauses.stream()
+                .map(CAUSE_TO_CATEGORY::get)
+                .filter(java.util.Objects::nonNull)
+                .forEach(scores::remove);
 
         MissionPriorityCalculator.MissionCategory topCategory = scores.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
-                .orElse(MissionPriorityCalculator.MissionCategory.HYDRATION);
+                .orElseThrow(() -> new IllegalStateException("더 이상 제안할 수 있는 미션 원인이 없습니다."));
 
         return CATEGORY_TO_CAUSE.get(topCategory);
+    }
+
+    public List<MissionTemplate> findAlternativeCandidates(
+            User user,
+            LocalDate today,
+            String currentCategory,
+            Set<String> excludedCategories,
+            Set<String> excludedActionTypes
+    ) {
+        List<MissionTemplate> candidates = calculateScores(user, today).entrySet().stream()
+                .sorted(Map.Entry.<MissionPriorityCalculator.MissionCategory, Integer>comparingByValue().reversed())
+                .map(entry -> CATEGORY_TO_CAUSE.get(entry.getKey()))
+                .flatMap(cause -> missionTemplateRepository.findByCauseAndIsActiveTrue(cause).stream())
+                .filter(template -> !excludedCategories.contains(template.getCategory()))
+                .filter(template -> !excludedActionTypes.contains(template.getActionType()))
+                .toList();
+
+        List<MissionTemplate> differentCategory = candidates.stream()
+                .filter(template -> !currentCategory.equals(template.getCategory()))
+                .toList();
+        List<MissionTemplate> categoryPreferred = differentCategory.isEmpty() ? candidates : differentCategory;
+
+        if (hasRecentFailure(user.getId(), today)) {
+            return categoryPreferred.stream()
+                    .filter(template -> "가벼운".equals(template.getIntensity()))
+                    .toList();
+        }
+
+        return selectBalancedIntensity(categoryPreferred);
     }
 
     public List<MissionTemplate> findCandidates(String cause, boolean preferEasy) {
@@ -76,9 +111,46 @@ public class MissionSlotSelector {
         return all;
     }
 
+    public List<MissionTemplate> findEasyCandidates(String cause, String actionType) {
+        return missionTemplateRepository.findByCauseAndIsActiveTrue(cause).stream()
+                .filter(template -> actionType.equals(template.getActionType()))
+                .filter(template -> "가벼운".equals(template.getIntensity()))
+                .toList();
+    }
+
     public boolean hasRecentFailure(Long userId, LocalDate today) {
         return missionCardRepository.findByUser_IdAndIssuedDate(userId, today.minusDays(1))
                 .map(card -> !Boolean.TRUE.equals(card.getIsCompleted()))
                 .orElse(false);
+    }
+
+    private Map<MissionPriorityCalculator.MissionCategory, Integer> calculateScores(User user, LocalDate today) {
+        Map<MissionPriorityCalculator.MissionCategory, Integer> scores =
+                priorityCalculator.calculate(user.getUserStatus(), user.getSkinConcerns());
+
+        Optional<Forecast> forecast = forecastRepository.findByUser_IdAndTargetDate(user.getId(), today);
+        if (forecast.isPresent() && forecast.get().getPrimaryFactor1Name() != null) {
+            MissionPriorityCalculator.MissionCategory primaryCategory =
+                    CAUSE_TO_CATEGORY.get(forecast.get().getPrimaryFactor1Name());
+            if (primaryCategory != null) {
+                scores.merge(primaryCategory, PRIMARY_FACTOR_BONUS, Integer::sum);
+            }
+        }
+        return scores;
+    }
+
+    private List<MissionTemplate> selectBalancedIntensity(List<MissionTemplate> candidates) {
+        List<String> intensities = candidates.stream()
+                .map(MissionTemplate::getIntensity)
+                .distinct()
+                .toList();
+        if (intensities.isEmpty()) {
+            return candidates;
+        }
+
+        String selectedIntensity = intensities.get(ThreadLocalRandom.current().nextInt(intensities.size()));
+        return candidates.stream()
+                .filter(template -> selectedIntensity.equals(template.getIntensity()))
+                .toList();
     }
 }

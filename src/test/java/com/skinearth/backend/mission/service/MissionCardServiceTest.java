@@ -1,8 +1,11 @@
 package com.skinearth.backend.mission.service;
 
-import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.badge.service.BadgeService;
+import com.skinearth.backend.mission.ai.MissionCardGenerator;
+import com.skinearth.backend.mission.ai.PendingMissionCandidateStore;
+import com.skinearth.backend.mission.ai.TodayMissionPreferenceStore;
+import com.skinearth.backend.mission.exception.MissionActionException;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
 import com.skinearth.backend.mission.dto.WeeklyMissionHistoryResponse;
@@ -10,6 +13,7 @@ import com.skinearth.backend.mission.entity.MissionCard;
 import com.skinearth.backend.mission.entity.MissionTemplate;
 import com.skinearth.backend.mission.repository.MissionCardRepository;
 import com.skinearth.backend.user.entity.User;
+import com.skinearth.backend.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,10 +27,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MissionCardServiceTest {
@@ -39,15 +47,26 @@ class MissionCardServiceTest {
     private MissionCardRepository missionCardRepository;
     @Mock
     private BadgeService badgeService;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private MissionCardGenerator missionCardGenerator;
 
     private MissionCardService missionCardService;
+    private PendingMissionCandidateStore pendingStore;
+    private TodayMissionPreferenceStore preferenceStore;
     private User user;
     private MissionTemplate template;
 
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-08-14T03:00:00Z"), ZoneId.of("Asia/Seoul"));
-        missionCardService = new MissionCardService(missionCardRepository, clock, badgeService);
+        pendingStore = new PendingMissionCandidateStore();
+        preferenceStore = new TodayMissionPreferenceStore();
+        missionCardService = new MissionCardService(
+                missionCardRepository, userRepository, missionCardGenerator,
+                pendingStore, preferenceStore, clock, badgeService
+        );
         user = User.builder()
                 .email("user@example.com")
                 .passwordHash("encoded-password")
@@ -152,6 +171,77 @@ class MissionCardServiceTest {
         assertThat(response.completionRatePercent()).isZero();
     }
 
+    @Test
+    void regenerationAvoidsCurrentAndPreviouslySuggestedActionTypes() {
+        MissionCard current = card(TODAY, false, false);
+        MissionTemplate firstAlternative = template("cause-b", "action-b", "집중");
+        MissionTemplate secondAlternative = template("cause-c", "action-c", "집중");
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+        when(missionCardGenerator.generateAlternative(
+                eq(user), eq(TODAY), eq(template.getCategory()), anySet(), anySet()
+        ))
+                .thenReturn(
+                        new MissionCardGenerator.MissionSlotResult(firstAlternative, "first", "first description"),
+                        new MissionCardGenerator.MissionSlotResult(secondAlternative, "second", "second description")
+                );
+
+        missionCardService.regenerate(USER_ID);
+        missionCardService.regenerate(USER_ID);
+
+        var actionTypesCaptor = org.mockito.ArgumentCaptor.forClass(Set.class);
+        verify(missionCardGenerator, org.mockito.Mockito.times(2))
+                .generateAlternative(eq(user), eq(TODAY), eq(template.getCategory()), anySet(), actionTypesCaptor.capture());
+        assertThat(actionTypesCaptor.getAllValues().get(0)).containsExactly(template.getActionType());
+        assertThat(actionTypesCaptor.getAllValues().get(1))
+                .containsExactlyInAnyOrder(template.getActionType(), "action-b");
+    }
+
+    @Test
+    void adjustingIntensityKeepsTheCurrentCause() {
+        MissionTemplate focusedTemplate = template("cause-a", "action-a", "집중");
+        MissionCard current = MissionCard.builder()
+                .user(user)
+                .template(focusedTemplate)
+                .issuedDate(TODAY)
+                .title("current")
+                .description("current description")
+                .isCompleted(false)
+                .isReplaced(false)
+                .build();
+        MissionTemplate easyTemplate = template("cause-a", "action-a", "가벼운");
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+        when(missionCardGenerator.generateWithFixedActionType("cause-a", "action-a"))
+                .thenReturn(new MissionCardGenerator.MissionSlotResult(easyTemplate, "easy", "easy description"));
+
+        missionCardService.adjustIntensity(USER_ID);
+
+        verify(missionCardGenerator).generateWithFixedActionType("cause-a", "action-a");
+    }
+
+    @Test
+    void rejectsIntensityAdjustmentWhenCurrentMissionIsAlreadyLight() {
+        MissionCard current = card(TODAY, false, false);
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+
+        assertThatThrownBy(() -> missionCardService.adjustIntensity(USER_ID))
+                .isInstanceOf(MissionActionException.class)
+                .extracting("code")
+                .isEqualTo("MISSION_ALREADY_LIGHT");
+    }
+
+    @Test
+    void excludesCurrentCategoryOnlyForTheCurrentDay() {
+        MissionCard current = card(TODAY, false, false);
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+
+        var response = missionCardService.excludeCurrentCategory(USER_ID);
+
+        assertThat(response.category()).isEqualTo(template.getCategory());
+        assertThat(preferenceStore.getExcludedCategories(USER_ID, TODAY)).containsExactly(template.getCategory());
+        assertThat(preferenceStore.getExcludedCategories(USER_ID, TODAY.plusDays(1))).isEmpty();
+    }
+
     private MissionCard card(LocalDate issuedDate, boolean completed, boolean replaced) {
         MissionCard card = MissionCard.builder()
                 .user(user)
@@ -166,5 +256,16 @@ class MissionCardServiceTest {
             card.complete(issuedDate.atTime(18, 0));
         }
         return card;
+    }
+
+    private MissionTemplate template(String cause, String actionType, String intensity) {
+        return MissionTemplate.builder()
+                .cause(cause)
+                .category("category")
+                .actionType(actionType)
+                .intensity(intensity)
+                .timing("now")
+                .isActive(true)
+                .build();
     }
 }
