@@ -1,21 +1,34 @@
 package com.skinearth.backend.forecast.service;
 
+import com.skinearth.backend.dailyrecord.entity.DailyRecord;
+import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
 import com.skinearth.backend.forecast.dto.ForecastRequestDto;
 import com.skinearth.backend.forecast.dto.ForecastResponseDto;
 import com.skinearth.backend.forecast.entity.Forecast;
 import com.skinearth.backend.forecast.repository.ForecastRepository;
+import com.skinearth.backend.forecast.statistics.FactorCorrelation;
+import com.skinearth.backend.forecast.statistics.RiskScoreCalculator;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
 public class ForecastService {
+    private static final int MIN_VALID_RECORD_COUNT = 10;
+    private static final double SLEEP_HOURS_MAX = 24.0;
+
     private final ForecastRepository forecastRepository;
     private final UserRepository userRepository;
+    private final DailyRecordRepository dailyRecordRepository;
+    private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
 
     public ForecastResponseDto createForecast(Long userId, ForecastRequestDto dto) {
         LocalDate targetDate = LocalDate.now().plusDays(1);
@@ -37,8 +50,82 @@ public class ForecastService {
                 .inputMeal(dto.getInputMeal())
                 .build();
 
+        applyRiskCalculation(forecast, userId, dto);
+
         Forecast savedForecast = forecastRepository.save(forecast);
         return ForecastResponseDto.from(savedForecast);
+    }
+
+    private void applyRiskCalculation(Forecast forecast, Long userId, ForecastRequestDto dto) {
+        long validRecordCount = dailyRecordRepository.countByUserId(userId);
+
+        if (validRecordCount < MIN_VALID_RECORD_COUNT) {
+            // 콜드스타트 대상 — A 연동 전까지 임시 기본값
+            forecast.applyRiskResult(50, "보통", "추정치", (int) validRecordCount,
+                    null, null, null, null);
+            return;
+        }
+
+        List<DailyRecord> records = dailyRecordRepository
+                .findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
+                        userId, LocalDate.now().minusDays(30), LocalDate.now());
+
+        List<FactorCorrelation> allFactors = new ArrayList<>();
+        allFactors.add(buildFactorCorrelation("냉난방", records, DailyRecord::getAcLevel, dto.getInputAc(), false));
+        allFactors.add(buildFactorCorrelation("화면 노출", records, DailyRecord::getScreenTime, dto.getInputScreenTime(), false));
+        allFactors.add(buildFactorCorrelation("수면", records, DailyRecord::getSleepHours, dto.getInputSleepHours(), true));
+        allFactors.add(buildFactorCorrelation("스트레스", records, DailyRecord::getStressLevel, dto.getInputStress(), false));
+        allFactors.add(buildFactorCorrelation("식사 규칙성", records, DailyRecord::getMealRegularity, dto.getInputMeal(), false));
+
+        List<FactorCorrelation> primaryFactors = riskScoreCalculator.selectPrimaryFactors(allFactors);
+
+        if (primaryFactors.isEmpty()) {
+            forecast.applyRiskResult(50, "보통", "데이터 기반", (int) validRecordCount,
+                    null, null, null, null);
+            return;
+        }
+
+        double riskScore = riskScoreCalculator.calculateRiskScore(primaryFactors);
+        String riskLevel = riskScoreCalculator.determineRiskLevel(riskScore);
+
+        String factor1Name = primaryFactors.get(0).variableName();
+        String factor1Level = riskScoreCalculator.determineRiskLevel(primaryFactors.get(0).normalizedInput());
+        String factor2Name = primaryFactors.size() > 1 ? primaryFactors.get(1).variableName() : null;
+        String factor2Level = primaryFactors.size() > 1
+                ? riskScoreCalculator.determineRiskLevel(primaryFactors.get(1).normalizedInput())
+                : null;
+
+        forecast.applyRiskResult((int) Math.round(riskScore), riskLevel, "데이터 기반", (int) validRecordCount,
+                factor1Name, factor1Level, factor2Name, factor2Level);
+    }
+
+    private FactorCorrelation buildFactorCorrelation(String name, List<DailyRecord> records,
+                                                     Function<DailyRecord, Integer> extractor,
+                                                     Integer tomorrowInput, boolean isSlider) {
+        List<Double> xValues = records.stream()
+                .map(extractor)
+                .filter(Objects::nonNull)
+                .map(Integer::doubleValue)
+                .toList();
+        List<Double> yValues = records.stream()
+                .map(DailyRecord::getSkinCondition)
+                .map(Integer::doubleValue)
+                .toList();
+
+        double correlation = xValues.size() == yValues.size() && !xValues.isEmpty()
+                ? riskScoreCalculator.calculatePearsonCorrelation(xValues, yValues)
+                : 0.0;
+
+        double normalizedInput;
+        if (tomorrowInput == null) {
+            normalizedInput = 50.0;
+        } else if (isSlider) {
+            normalizedInput = (tomorrowInput / SLEEP_HOURS_MAX) * 100;
+        } else {
+            normalizedInput = (tomorrowInput - 1) / 4.0 * 100;
+        }
+
+        return new FactorCorrelation(name, correlation, normalizedInput);
     }
 
     public ForecastResponseDto getForecast(Long userId) {
