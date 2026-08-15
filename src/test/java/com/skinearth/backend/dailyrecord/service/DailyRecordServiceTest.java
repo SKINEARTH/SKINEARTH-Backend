@@ -7,6 +7,7 @@ import com.skinearth.backend.dailyrecord.dto.DailyRecordResponse;
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
 import com.skinearth.backend.dailyrecord.entity.SymptomTag;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
+import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;

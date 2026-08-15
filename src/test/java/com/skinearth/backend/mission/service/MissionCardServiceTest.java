@@ -2,6 +2,7 @@ package com.skinearth.backend.mission.service;
 
 import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.common.exception.NotFoundException;
+import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
 import com.skinearth.backend.mission.dto.WeeklyMissionHistoryResponse;

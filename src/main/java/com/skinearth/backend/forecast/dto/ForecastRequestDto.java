@@ -1,14 +1,14 @@
 package com.skinearth.backend.forecast.dto;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
-@Getter
-@NoArgsConstructor
-public class ForecastRequestDto {
-    private Integer inputAc;
-    private Integer inputScreenTime;
-    private Integer inputSleepHours;
-    private Integer inputStress;
-    private Integer inputMeal;
+public record ForecastRequestDto(
+        @NotNull @Min(1) @Max(5) Integer inputAc,
+        @NotNull @Min(1) @Max(5) Integer inputScreenTime,
+        @NotNull @Min(0) @Max(24) Integer inputSleepHours,
+        @NotNull @Min(1) @Max(5) Integer inputStress,
+        @NotNull @Min(1) @Max(5) Integer inputMeal
+) {
 }
