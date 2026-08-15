@@ -46,6 +46,11 @@ public class Forecast {
     @OrderBy("factorRank ASC")
     private List<ForecastFactor> factors = new ArrayList<>();
 
+    private String primaryFactor1Name;
+    private String primaryFactor1Level;
+    private String primaryFactor2Name;
+    private String primaryFactor2Level;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -73,4 +78,17 @@ public class Forecast {
     }
 
     public List<ForecastFactor> getFactors() { return Collections.unmodifiableList(factors); }
+
+    public void applyRiskResult(Integer riskScore, String riskLevel, String source, Integer validRecordCount,
+                                String primaryFactor1Name, String primaryFactor1Level,
+                                String primaryFactor2Name, String primaryFactor2Level) {
+        this.riskScore = riskScore; this.riskLevel = riskLevel; this.source = source;
+        this.validRecordCount = validRecordCount; this.primaryFactor1Name = primaryFactor1Name;
+        this.primaryFactor1Level = primaryFactor1Level; this.primaryFactor2Name = primaryFactor2Name;
+        this.primaryFactor2Level = primaryFactor2Level;
+    }
+
+    public void applyAiComment(String aiComment, Boolean isCommentFallback) {
+        this.aiComment = aiComment; this.isCommentFallback = isCommentFallback;
+    }
 }

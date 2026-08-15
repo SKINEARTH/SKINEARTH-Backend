@@ -19,4 +19,6 @@ public interface MissionCardRepository extends JpaRepository<MissionCard, Long> 
     );
 
     long deleteByUser_Id(Long userId);
+
+    long countByUser_IdAndIsCompletedTrue(Long userId);
 }

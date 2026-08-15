@@ -77,7 +77,7 @@ INSERT IGNORE INTO mission_template (cause, category, action_type, intensity, ti
 ('식사규칙성', '규칙적 식사', '건강 간식 제안', '집중', '점심후', true),
 ('식사규칙성', '규칙적 식사', '건강 간식 제안', '집중', '퇴근전', true);
 
-INSERT IGNORE INTO badge (stage, name, description, record_count_threshold, streak_threshold, mission_count_threshold) VALUES
-(1, '관측자', '가입하면 누구나 시작하는 첫 단계예요', NULL, NULL, NULL),
-(2, '탐사자', '유효 기록 10건을 달성하면 승급해요', 10, NULL, NULL),
-(3, '여행자', '연속 기록 7일 또는 미션 누적 완료 10회를 달성하면 승급해요', NULL, 7, 10);
+INSERT IGNORE INTO badge (stage, name, description, condition_description, record_count_threshold, streak_threshold, mission_count_threshold) VALUES
+(1, '관측자', '가장 기본적인 형태의 신입사원 PP입니다. 좋아하는 음료는 아메리카노라고 해요.', '궤도를 10건 이상 기록하세요', NULL, NULL, NULL),
+(2, '탐사자', '직진할 줄 아는 사회인 PP입니다. 야근이 늘어 숙면을 취하지 못해 고민이라고 해요.', '궤도 7일 연속 기록하거나, 탐사 미션 10회 완료하면 진급해요', 10, NULL, NULL),
+(3, '여행자', '어느덧 베테랑이 된 부장님 PP입니다. 승진의 비결은 피부 관리를 잊지 않는 것이라고 해요.', '최고 레벨을 달성했어요! 축하합니다.', NULL, 7, 10);

@@ -7,6 +7,7 @@ import lombok.Getter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Getter
 @Builder
@@ -23,6 +24,18 @@ public class ForecastResponseDto {
     private List<ForecastFactorResponse> primaryFactors;
 
     public static ForecastResponseDto from(Forecast forecast) {
+        List<ForecastFactorResponse> factors = forecast.getFactors().stream()
+                .map(ForecastFactorResponse::from).toList();
+        if (factors.isEmpty()) {
+            List<ForecastFactorResponse> dataFactors = new ArrayList<>();
+            if (forecast.getPrimaryFactor1Name() != null)
+                dataFactors.add(new ForecastFactorResponse(forecast.getPrimaryFactor1Name(),
+                        forecast.getPrimaryFactor1Level(), null, 1));
+            if (forecast.getPrimaryFactor2Name() != null)
+                dataFactors.add(new ForecastFactorResponse(forecast.getPrimaryFactor2Name(),
+                        forecast.getPrimaryFactor2Level(), null, 2));
+            factors = List.copyOf(dataFactors);
+        }
         return ForecastResponseDto.builder()
                 .id(forecast.getId())
                 .targetDate(forecast.getTargetDate())
@@ -33,7 +46,7 @@ public class ForecastResponseDto {
                 .aiComment(forecast.getAiComment())
                 .isCommentFallback(forecast.getIsCommentFallback())
                 .createdAt(forecast.getCreatedAt())
-                .primaryFactors(forecast.getFactors().stream().map(ForecastFactorResponse::from).toList())
+                .primaryFactors(factors)
                 .build();
     }
 }

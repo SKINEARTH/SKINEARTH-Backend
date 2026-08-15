@@ -124,6 +124,12 @@ public class User {
         this.stage = 1;
     }
 
+    public void promoteStage() {
+        if (this.stage < 3) {
+            this.stage += 1;
+        }
+    }
+
     private void replaceSkinConcerns(Collection<SkinConcern> skinConcerns) {
         this.skinConcerns.clear();
         if (skinConcerns != null) {

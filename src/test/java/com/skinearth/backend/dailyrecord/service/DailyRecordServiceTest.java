@@ -6,6 +6,7 @@ import com.skinearth.backend.dailyrecord.dto.DailyRecordResponse;
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
 import com.skinearth.backend.dailyrecord.entity.SymptomTag;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
+import com.skinearth.backend.badge.service.BadgeService;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,8 @@ class DailyRecordServiceTest {
     private DailyRecordRepository dailyRecordRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private BadgeService badgeService;
 
     private DailyRecordService dailyRecordService;
     private User user;
@@ -47,7 +50,8 @@ class DailyRecordServiceTest {
                 dailyRecordRepository,
                 userRepository,
                 clock,
-                new RecordStreakCalculator()
+                new RecordStreakCalculator(),
+                badgeService
         );
         user = User.builder()
                 .email("user@example.com")
