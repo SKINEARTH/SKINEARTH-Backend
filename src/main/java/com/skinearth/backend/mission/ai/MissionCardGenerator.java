@@ -42,17 +42,17 @@ public class MissionCardGenerator {
         List<MissionTemplate> candidates = slotSelector.findAlternativeCandidates(
                 user, today, currentCategory, excludedCategories, excludedActionTypes
         );
-        return selectAlternative("다른 미션", candidates);
+        return selectAlternative(candidates);
     }
 
     public MissionSlotResult generateWithFixedActionType(String cause, String actionType) {
-        return selectAlternative(cause, slotSelector.findEasyCandidates(cause, actionType));
+        return selectAlternative(slotSelector.findEasyCandidates(cause, actionType));
     }
 
     private MissionCard buildCard(User user, LocalDate today, String cause, boolean forceEasy, boolean isReplaced) {
         boolean preferEasy = forceEasy || slotSelector.hasRecentFailure(user.getId(), today);
         List<MissionTemplate> candidates = slotSelector.findCandidates(cause, preferEasy);
-        MissionSlotResult result = selectAlternative(cause, candidates);
+        MissionSlotResult result = selectAlternative(candidates);
 
         return MissionCard.builder()
                 .user(user)
@@ -65,21 +65,21 @@ public class MissionCardGenerator {
                 .build();
     }
 
-    private MissionSlotResult selectAlternative(String cause, List<MissionTemplate> candidates) {
+    private MissionSlotResult selectAlternative(List<MissionTemplate> candidates) {
         if (candidates.isEmpty()) {
             throw new NoMissionCandidateException();
         }
 
-        MissionSlotResult result = trySelectWithAi(cause, candidates);
+        MissionSlotResult result = trySelectWithAi(candidates);
         if (result == null) {
-            result = fallbackSelect(cause, candidates);
+            result = fallbackSelect(candidates);
         }
         return result;
     }
 
-    private MissionSlotResult trySelectWithAi(String cause, List<MissionTemplate> candidates) {
+    private MissionSlotResult trySelectWithAi(List<MissionTemplate> candidates) {
         try {
-            String prompt = promptBuilder.build(cause, candidates);
+            String prompt = promptBuilder.build(candidates);
             String raw = geminiClient.generateComment(prompt);
             String cleaned = raw.replaceAll("```json|```", "").trim();
             MissionSlotSelection selection = objectMapper.readValue(cleaned, MissionSlotSelection.class);
@@ -88,25 +88,25 @@ public class MissionCardGenerator {
                 log.warn("AI가 유효하지 않은 인덱스를 반환했습니다: {}", selection.selectedIndex());
                 return null;
             }
-            if (forbiddenWordFilter.containsForbiddenWord(selection.title())
+            if (selection.description() == null || selection.description().isBlank()
                     || forbiddenWordFilter.containsForbiddenWord(selection.description())) {
                 log.warn("AI 응답에 금지어가 포함되어 있습니다.");
                 return null;
             }
 
             MissionTemplate selected = candidates.get(selection.selectedIndex());
-            return new MissionSlotResult(selected, selection.title(), selection.description());
+            return new MissionSlotResult(selected, selected.getDisplayTitle(), selection.description());
         } catch (Exception exception) {
             log.warn("AI 슬롯 선택 실패, 규칙 기반 폴백으로 대체합니다.", exception);
             return null;
         }
     }
 
-    private MissionSlotResult fallbackSelect(String cause, List<MissionTemplate> candidates) {
+    private MissionSlotResult fallbackSelect(List<MissionTemplate> candidates) {
         MissionTemplate template = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
-        String title = template.getActionType();
-        String description = "%s가 오늘의 주요 원인으로 잡혔어요. %s 미션으로 관리해 보세요."
-                .formatted(cause, template.getActionType());
+        String title = template.getDisplayTitle();
+        String description = "오늘은 %s 미션을 가볍게 실천해 보세요."
+                .formatted(template.getActionType());
         return new MissionSlotResult(template, title, description);
     }
 

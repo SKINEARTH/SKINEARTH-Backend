@@ -66,7 +66,9 @@ public class MissionCardService {
         pendingStore.save(userId, new PendingMissionCandidateStore.PendingCandidate(
                 result.template(), result.title(), result.description()));
 
-        return new MissionAlternativeResponse(result.title(), result.description(), result.template().getCategory());
+        return new MissionAlternativeResponse(
+                result.title(), result.description(), result.template().getCategory(), result.template().getEstimatedMinutes()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +99,9 @@ public class MissionCardService {
         pendingStore.save(userId, new PendingMissionCandidateStore.PendingCandidate(
                 result.template(), result.title(), result.description()));
 
-        return new MissionAlternativeResponse(result.title(), result.description(), result.template().getCategory());
+        return new MissionAlternativeResponse(
+                result.title(), result.description(), result.template().getCategory(), result.template().getEstimatedMinutes()
+        );
     }
 
     @Transactional(readOnly = true)
