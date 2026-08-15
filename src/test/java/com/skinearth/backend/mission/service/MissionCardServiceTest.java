@@ -183,6 +183,7 @@ class MissionCardServiceTest {
         var response = missionCardService.getTodayCard(USER_ID);
 
         assertThat(response.streak()).isEqualTo(2);
+        assertThat(response.estimatedMinutes()).isEqualTo(1);
     }
 
     @Test
@@ -220,9 +221,10 @@ class MissionCardServiceTest {
                         new MissionCardGenerator.MissionSlotResult(secondAlternative, "second", "second description")
                 );
 
-        missionCardService.regenerate(USER_ID);
+        var firstResponse = missionCardService.regenerate(USER_ID);
         missionCardService.regenerate(USER_ID);
 
+        assertThat(firstResponse.estimatedMinutes()).isEqualTo(1);
         var actionTypesCaptor = org.mockito.ArgumentCaptor.forClass(Set.class);
         verify(missionCardGenerator, org.mockito.Mockito.times(2))
                 .generateAlternative(eq(user), eq(TODAY), eq(template.getCategory()), anySet(), actionTypesCaptor.capture());
