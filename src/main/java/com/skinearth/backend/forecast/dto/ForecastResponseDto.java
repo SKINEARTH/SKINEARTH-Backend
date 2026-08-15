@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -19,6 +20,7 @@ public class ForecastResponseDto {
     private String aiComment;
     private Boolean isCommentFallback;
     private LocalDateTime createdAt;
+    private List<ForecastFactorResponse> primaryFactors;
 
     public static ForecastResponseDto from(Forecast forecast) {
         return ForecastResponseDto.builder()
@@ -31,6 +33,7 @@ public class ForecastResponseDto {
                 .aiComment(forecast.getAiComment())
                 .isCommentFallback(forecast.getIsCommentFallback())
                 .createdAt(forecast.getCreatedAt())
+                .primaryFactors(forecast.getFactors().stream().map(ForecastFactorResponse::from).toList())
                 .build();
     }
 }

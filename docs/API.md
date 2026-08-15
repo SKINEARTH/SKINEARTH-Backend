@@ -286,7 +286,38 @@ Authorization: Bearer {accessToken}
 
 스트릭은 전날 기록부터 연속된 일수를 계산합니다. 전날 기록이 없다면 `0`입니다.
 
-## 6. 궤도 히스토리
+## 6. 내일의 궤도 예보 — 콜드스타트
+
+개인화 설문을 완료했으며 유효 기록이 10건 미만인 사용자가 이용합니다.
+
+### 6.1 콜드스타트 예보 생성
+
+`POST /api/forecasts`
+
+```json
+{
+  "inputAc": 3,
+  "inputScreenTime": 4,
+  "inputSleepHours": 6,
+  "inputStress": 2,
+  "inputMeal": 4
+}
+```
+
+- 다섯 입력값은 모두 필수입니다.
+- 냉난방·스크린타임·스트레스·식사 규칙성은 1~5, 수면은 0~24시간입니다.
+- 사용자 상태와 피부 고민으로 정한 상위 원인 2개의 가중평균을 반올림하여 위험도를 계산합니다.
+- 같은 날짜의 예보는 한 번만 생성할 수 있습니다.
+
+성공: `201 Created`. 응답의 `source`는 `COLD_START`이며 `primaryFactors`에 원인, 우선순위 점수와 순위가 포함됩니다.
+
+### 6.2 내일 예보 조회
+
+`GET /api/forecasts`
+
+JWT 사용자에게 저장된 내일 예보를 조회합니다.
+
+## 7. 궤도 히스토리
 
 ### 주간·월간 기록 조회
 
@@ -323,7 +354,7 @@ Authorization: Bearer {accessToken}
 
 기록이 한 건도 없으면 `averageSkinCondition`은 `null`입니다.
 
-## 7. 마이페이지
+## 8. 마이페이지
 
 ### 7.1 마이페이지 정보 조회
 
@@ -372,7 +403,7 @@ Authorization: Bearer {accessToken}
 - 가입일
 - 약관 동의 정보
 
-## 8. 미션 이행
+## 9. 미션 이행
 
 미션 생성 기능에서 오늘의 미션 카드가 발행된 이후 사용할 수 있습니다.
 
@@ -457,7 +488,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-## 9. 로컬 실행 환경 변수
+## 10. 로컬 실행 환경 변수
 
 MySQL 비밀번호가 없는 경우 IntelliJ 실행 구성에 다음 환경 변수를 설정합니다.
 
@@ -467,7 +498,7 @@ DB_USERNAME=root;DB_PASSWORD=;JWT_SECRET=skinearth-local-development-secret-key-
 
 `JWT_SECRET`은 32바이트 이상이어야 합니다. 위 값은 로컬 개발 예시이며 배포 환경에서는 별도의 안전한 값을 사용합니다.
 
-## 10. 권장 연동 테스트 순서
+## 11. 권장 연동 테스트 순서
 
 1. 회원가입
 2. 로그인 후 JWT 저장
@@ -479,11 +510,10 @@ DB_USERNAME=root;DB_PASSWORD=;JWT_SECRET=skinearth-local-development-secret-key-
 8. 미션이 발행된 경우 오늘 미션 조회·완료·주간 이행률 조회
 9. 테스트 종료 후 필요하면 데이터 초기화
 
-## 11. 아직 완료되지 않은 연동
+## 12. 아직 완료되지 않은 연동
 
 다음 항목은 구현 또는 기획 기준 확정 후 이 문서에 추가합니다.
 
-- 4.4 콜드스타트 위험도 계산
 - 4.6 위험도·등급·원인·AI 코멘트를 포함한 예보 결과 저장
 - 2.1~2.5 홈 통합 API
 - 5.4 미션 교체 및 퀵리플라이 연동
