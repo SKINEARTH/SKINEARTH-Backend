@@ -19,6 +19,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MissionSlotSelector {
 
+    private static final int PRIMARY_FACTOR_BONUS = 4;
+
     private static final Map<MissionPriorityCalculator.MissionCategory, String> CATEGORY_TO_CAUSE = Map.of(
             MissionPriorityCalculator.MissionCategory.HYDRATION, "냉난방",
             MissionPriorityCalculator.MissionCategory.INDOOR_CARE, "스크린타임",
@@ -27,21 +29,32 @@ public class MissionSlotSelector {
             MissionPriorityCalculator.MissionCategory.MEAL_REGULARITY, "식사규칙성"
     );
 
+    private static final Map<String, MissionPriorityCalculator.MissionCategory> CAUSE_TO_CATEGORY = Map.of(
+            "냉난방", MissionPriorityCalculator.MissionCategory.HYDRATION,
+            "스크린타임", MissionPriorityCalculator.MissionCategory.INDOOR_CARE,
+            "수면", MissionPriorityCalculator.MissionCategory.SLEEP_PREP,
+            "스트레스", MissionPriorityCalculator.MissionCategory.STRESS_RELIEF,
+            "식사규칙성", MissionPriorityCalculator.MissionCategory.MEAL_REGULARITY
+    );
+
     private final ForecastRepository forecastRepository;
     private final MissionTemplateRepository missionTemplateRepository;
     private final MissionCardRepository missionCardRepository;
     private final MissionPriorityCalculator priorityCalculator;
 
     public String determineTodayCause(User user, LocalDate today) {
-        Optional<Forecast> forecast = forecastRepository.findByUser_IdAndTargetDate(user.getId(), today);
-
-        if (forecast.isPresent() && forecast.get().getPrimaryFactor1Name() != null) {
-            return forecast.get().getPrimaryFactor1Name();
-        }
-
-        // Forecast가 없거나 원인 불명확이면, 5.2 우선순위 1위 카테고리로 대체
         Map<MissionPriorityCalculator.MissionCategory, Integer> scores =
                 priorityCalculator.calculate(user.getUserStatus(), user.getSkinConcerns());
+
+        Optional<Forecast> forecast = forecastRepository.findByUser_IdAndTargetDate(user.getId(), today);
+        if (forecast.isPresent() && forecast.get().getPrimaryFactor1Name() != null) {
+            String primaryCause = forecast.get().getPrimaryFactor1Name();
+            MissionPriorityCalculator.MissionCategory primaryCategory = CAUSE_TO_CATEGORY.get(primaryCause);
+            if (primaryCategory != null) {
+                scores.merge(primaryCategory, PRIMARY_FACTOR_BONUS, Integer::sum);
+            }
+        }
+
         MissionPriorityCalculator.MissionCategory topCategory = scores.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
