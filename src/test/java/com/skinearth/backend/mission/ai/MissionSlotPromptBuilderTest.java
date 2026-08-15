@@ -27,6 +27,8 @@ class MissionSlotPromptBuilderTest {
         assertThat(prompt)
                 .contains("행동을 안내하는 한 문장 (25~55자)")
                 .contains("주요 원인, 추천 이유, 카테고리 이름을 언급하지 말 것")
+                .contains("질문형 문장, 물음표, \"까요\", \"나요\"를 사용하지 말 것")
+                .contains("반드시 \"~해 보세요.\" 또는 \"~주세요.\"로 끝낼 것")
                 .contains("0. 행동유형: 취침 전 스트레칭")
                 .doesNotContain("오늘의 주요 원인")
                 .doesNotContain("\"title\"");
