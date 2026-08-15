@@ -34,6 +34,7 @@ import java.util.function.Function;
 public class ForecastService {
     private static final Logger log = LoggerFactory.getLogger(ForecastService.class);
     private static final int DATA_BASED_RECORD_COUNT = 10;
+    private static final double SLEEP_OPTIMAL_HOURS = 7.0;
     private static final String FALLBACK_COMMENT = "아직 데이터를 분석하는 중이에요. 오늘도 꾸준히 기록하며 피부 컨디션을 함께 살펴봐요!";
     private final ForecastRepository forecastRepository;
     private final UserRepository userRepository;
@@ -89,11 +90,11 @@ public class ForecastService {
         List<DailyRecord> records = dailyRecordRepository.findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
                 userId, LocalDate.now(clock).minusDays(30), LocalDate.now(clock));
         List<FactorCorrelation> all = new ArrayList<>();
-        all.add(factor("냉난방", records, DailyRecord::getAcLevel, request.inputAc(), false));
-        all.add(factor("화면 노출", records, DailyRecord::getScreenTime, request.inputScreenTime(), false));
-        all.add(factor("수면", records, DailyRecord::getSleepHours, request.inputSleepHours(), true));
-        all.add(factor("스트레스", records, DailyRecord::getStressLevel, request.inputStress(), false));
-        all.add(factor("식사 규칙성", records, DailyRecord::getMealRegularity, request.inputMeal(), false));
+        all.add(factor("냉난방", records, DailyRecord::getAcLevel, request.inputAc(), FactorType.NORMAL));
+        all.add(factor("화면 노출", records, DailyRecord::getScreenTime, request.inputScreenTime(), FactorType.NORMAL));
+        all.add(factor("수면", records, DailyRecord::getSleepHours, request.inputSleepHours(), FactorType.SLEEP));
+        all.add(factor("스트레스", records, DailyRecord::getStressLevel, request.inputStress(), FactorType.NORMAL));
+        all.add(factor("식사 규칙성", records, DailyRecord::getMealRegularity, request.inputMeal(), FactorType.INVERSE));
         List<FactorCorrelation> primary = riskScoreCalculator.selectPrimaryFactors(all);
         if (primary.isEmpty()) {
             forecast.applyRiskResult(50, "보통", "데이터 기반", (int) recordCount, null, null, null, null);
@@ -107,14 +108,25 @@ public class ForecastService {
                 riskScoreCalculator.determineRiskLevel(primary.get(0).normalizedInput()), factor2Name, factor2Level);
     }
 
+    private enum FactorType { NORMAL, INVERSE, SLEEP }
+
     private FactorCorrelation factor(String name, List<DailyRecord> records,
-                                     Function<DailyRecord, Integer> extractor, Integer input, boolean sleep) {
+                                     Function<DailyRecord, Integer> extractor, Integer input, FactorType type) {
         List<Double> x = records.stream().map(extractor).filter(Objects::nonNull).map(Integer::doubleValue).toList();
         List<Double> y = records.stream().map(DailyRecord::getSkinCondition).map(Integer::doubleValue).toList();
         double correlation = x.size() == y.size() && !x.isEmpty()
                 ? riskScoreCalculator.calculatePearsonCorrelation(x, y) : 0.0;
-        double normalized = input == null ? 50.0 : sleep ? input / 24.0 * 100 : (input - 1) / 4.0 * 100;
+        double normalized = normalize(input, type);
         return new FactorCorrelation(name, correlation, normalized);
+    }
+
+    private double normalize(Integer input, FactorType type) {
+        if (input == null) return 50.0;
+        return switch (type) {
+            case NORMAL -> (input - 1) / 4.0 * 100;
+            case INVERSE -> (5 - input) / 4.0 * 100;
+            case SLEEP -> input < SLEEP_OPTIMAL_HOURS ? (SLEEP_OPTIMAL_HOURS - input) / SLEEP_OPTIMAL_HOURS * 100 : 0.0;
+        };
     }
 
     private void applyAiComment(Forecast forecast, User user) {
