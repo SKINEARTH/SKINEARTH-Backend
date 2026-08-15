@@ -6,8 +6,8 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
 @Getter
 @Builder
@@ -20,31 +20,22 @@ public class ForecastResponseDto {
     private Integer validRecordCount;
     private String aiComment;
     private Boolean isCommentFallback;
-    private List<PrimaryFactor> primaryFactors;
     private LocalDateTime createdAt;
-
-    @Getter
-    @Builder
-    public static class PrimaryFactor {
-        private String name;
-        private String level;
-    }
+    private List<ForecastFactorResponse> primaryFactors;
 
     public static ForecastResponseDto from(Forecast forecast) {
-        List<PrimaryFactor> factors = new ArrayList<>();
-        if (forecast.getPrimaryFactor1Name() != null) {
-            factors.add(PrimaryFactor.builder()
-                    .name(forecast.getPrimaryFactor1Name())
-                    .level(forecast.getPrimaryFactor1Level())
-                    .build());
+        List<ForecastFactorResponse> factors = forecast.getFactors().stream()
+                .map(ForecastFactorResponse::from).toList();
+        if (factors.isEmpty()) {
+            List<ForecastFactorResponse> dataFactors = new ArrayList<>();
+            if (forecast.getPrimaryFactor1Name() != null)
+                dataFactors.add(new ForecastFactorResponse(forecast.getPrimaryFactor1Name(),
+                        forecast.getPrimaryFactor1Level(), null, 1));
+            if (forecast.getPrimaryFactor2Name() != null)
+                dataFactors.add(new ForecastFactorResponse(forecast.getPrimaryFactor2Name(),
+                        forecast.getPrimaryFactor2Level(), null, 2));
+            factors = List.copyOf(dataFactors);
         }
-        if (forecast.getPrimaryFactor2Name() != null) {
-            factors.add(PrimaryFactor.builder()
-                    .name(forecast.getPrimaryFactor2Name())
-                    .level(forecast.getPrimaryFactor2Level())
-                    .build());
-        }
-
         return ForecastResponseDto.builder()
                 .id(forecast.getId())
                 .targetDate(forecast.getTargetDate())
@@ -54,8 +45,8 @@ public class ForecastResponseDto {
                 .validRecordCount(forecast.getValidRecordCount())
                 .aiComment(forecast.getAiComment())
                 .isCommentFallback(forecast.getIsCommentFallback())
-                .primaryFactors(factors)
                 .createdAt(forecast.getCreatedAt())
+                .primaryFactors(factors)
                 .build();
     }
 }

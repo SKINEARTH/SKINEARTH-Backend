@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import com.skinearth.backend.forecast.coldstart.ColdStartFactorResult;
 
 @Entity
 @Table(name="forecast")
@@ -38,6 +42,10 @@ public class Forecast {
     private String aiComment;
     private Boolean isCommentFallback;
 
+    @OneToMany(mappedBy = "forecast", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("factorRank ASC")
+    private List<ForecastFactor> factors = new ArrayList<>();
+
     private String primaryFactor1Name;
     private String primaryFactor1Level;
     private String primaryFactor2Name;
@@ -49,7 +57,8 @@ public class Forecast {
     @Builder
     public Forecast(User user, LocalDate targetDate,
                     Integer inputAc, Integer inputScreenTime, Integer inputSleepHours,
-                    Integer inputStress, Integer inputMeal) {
+                    Integer inputStress, Integer inputMeal, Integer riskScore,
+                    String riskLevel, String source, Integer validRecordCount) {
         this.user = user;
         this.targetDate = targetDate;
         this.inputAc = inputAc;
@@ -57,24 +66,29 @@ public class Forecast {
         this.inputSleepHours = inputSleepHours;
         this.inputStress = inputStress;
         this.inputMeal = inputMeal;
-        this.createdAt = LocalDateTime.now();
-    }
-
-    public void applyRiskResult(Integer riskScore, String riskLevel, String source, Integer validRecordCount,
-                                String primaryFactor1Name, String primaryFactor1Level,
-                                String primaryFactor2Name, String primaryFactor2Level) {
         this.riskScore = riskScore;
         this.riskLevel = riskLevel;
         this.source = source;
         this.validRecordCount = validRecordCount;
-        this.primaryFactor1Name = primaryFactor1Name;
-        this.primaryFactor1Level = primaryFactor1Level;
-        this.primaryFactor2Name = primaryFactor2Name;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public void addPrimaryFactors(List<ColdStartFactorResult> results) {
+        for (int i = 0; i < results.size(); i++) factors.add(new ForecastFactor(this, results.get(i), i + 1));
+    }
+
+    public List<ForecastFactor> getFactors() { return Collections.unmodifiableList(factors); }
+
+    public void applyRiskResult(Integer riskScore, String riskLevel, String source, Integer validRecordCount,
+                                String primaryFactor1Name, String primaryFactor1Level,
+                                String primaryFactor2Name, String primaryFactor2Level) {
+        this.riskScore = riskScore; this.riskLevel = riskLevel; this.source = source;
+        this.validRecordCount = validRecordCount; this.primaryFactor1Name = primaryFactor1Name;
+        this.primaryFactor1Level = primaryFactor1Level; this.primaryFactor2Name = primaryFactor2Name;
         this.primaryFactor2Level = primaryFactor2Level;
     }
 
     public void applyAiComment(String aiComment, Boolean isCommentFallback) {
-        this.aiComment = aiComment;
-        this.isCommentFallback = isCommentFallback;
+        this.aiComment = aiComment; this.isCommentFallback = isCommentFallback;
     }
 }
