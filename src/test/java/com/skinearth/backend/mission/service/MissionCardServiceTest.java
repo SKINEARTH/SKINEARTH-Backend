@@ -8,6 +8,7 @@ import com.skinearth.backend.mission.ai.TodayMissionPreferenceStore;
 import com.skinearth.backend.mission.exception.MissionActionException;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
+import com.skinearth.backend.mission.dto.MonthlyMissionCompletionResponse;
 import com.skinearth.backend.mission.dto.WeeklyMissionHistoryResponse;
 import com.skinearth.backend.mission.entity.MissionCard;
 import com.skinearth.backend.mission.entity.MissionTemplate;
@@ -169,6 +170,25 @@ class MissionCardServiceTest {
         assertThat(response.issuedCount()).isZero();
         assertThat(response.completedCount()).isZero();
         assertThat(response.completionRatePercent()).isZero();
+    }
+
+    @Test
+    void calculatesMonthlyCompletionRateForCurrentMonth() {
+        MissionCard completed = card(LocalDate.of(2026, 8, 3), true, false);
+        MissionCard pending = card(LocalDate.of(2026, 8, 14), false, false);
+        LocalDate startDate = LocalDate.of(2026, 8, 1);
+        LocalDate endDate = LocalDate.of(2026, 8, 31);
+        when(missionCardRepository.findAllByUser_IdAndIssuedDateBetweenOrderByIssuedDateDesc(
+                USER_ID, startDate, endDate
+        )).thenReturn(List.of(pending, completed));
+
+        MonthlyMissionCompletionResponse response = missionCardService.getMonthlyHistory(USER_ID);
+
+        assertThat(response.startDate()).isEqualTo(startDate);
+        assertThat(response.endDate()).isEqualTo(endDate);
+        assertThat(response.issuedCount()).isEqualTo(2);
+        assertThat(response.completedCount()).isEqualTo(1);
+        assertThat(response.completionRatePercent()).isEqualTo(50.0);
     }
 
     @Test

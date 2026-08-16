@@ -10,6 +10,7 @@ import com.skinearth.backend.mission.dto.MissionCategoryExclusionResponse;
 import com.skinearth.backend.mission.dto.MissionCardResponse;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
+import com.skinearth.backend.mission.dto.MonthlyMissionCompletionResponse;
 import com.skinearth.backend.mission.dto.WeeklyMissionHistoryResponse;
 import com.skinearth.backend.mission.entity.MissionCard;
 import com.skinearth.backend.mission.exception.MissionActionException;
@@ -155,6 +156,35 @@ public class MissionCardService {
         LocalDate startDate = effectiveDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate endDate = effectiveDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
+        return getMissionHistory(userId, today, startDate, endDate);
+    }
+
+    @Transactional(readOnly = true)
+    public MonthlyMissionCompletionResponse getMonthlyHistory(Long userId) {
+        LocalDate today = LocalDate.now(clock);
+        LocalDate startDate = today.withDayOfMonth(1);
+        LocalDate endDate = today.with(TemporalAdjusters.lastDayOfMonth());
+
+        List<MissionCard> cards = missionCardRepository
+                .findAllByUser_IdAndIssuedDateBetweenOrderByIssuedDateDesc(userId, startDate, endDate);
+        int completedCount = (int) cards.stream()
+                .filter(card -> Boolean.TRUE.equals(card.getIsCompleted()))
+                .count();
+        double completionRate = cards.isEmpty()
+                ? 0.0
+                : Math.round(completedCount * 1000.0 / cards.size()) / 10.0;
+
+        return new MonthlyMissionCompletionResponse(
+                startDate, endDate, cards.size(), completedCount, completionRate
+        );
+    }
+
+    private WeeklyMissionHistoryResponse getMissionHistory(
+            Long userId,
+            LocalDate today,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
         List<MissionHistoryResponse> cards = missionCardRepository
                 .findAllByUser_IdAndIssuedDateBetweenOrderByIssuedDateDesc(userId, startDate, endDate)
                 .stream()

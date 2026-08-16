@@ -5,6 +5,7 @@ import com.skinearth.backend.mission.dto.MissionAlternativeResponse;
 import com.skinearth.backend.mission.dto.MissionCategoryExclusionResponse;
 import com.skinearth.backend.mission.dto.MissionCardResponse;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
+import com.skinearth.backend.mission.dto.MonthlyMissionCompletionResponse;
 import com.skinearth.backend.mission.dto.WeeklyMissionHistoryResponse;
 import com.skinearth.backend.mission.service.MissionCardService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,12 @@ public class MissionCardController {
     ) {
         return ApiResponse.success(200, "주간 미션 이행 기록을 조회했습니다.",
                 missionCardService.getWeeklyHistory(userId(jwt), date));
+    }
+
+    @GetMapping("/history/monthly")
+    public ApiResponse<MonthlyMissionCompletionResponse> getMonthlyHistory(@AuthenticationPrincipal Jwt jwt) {
+        return ApiResponse.success(200, "월간 미션 완료율을 조회했습니다.",
+                missionCardService.getMonthlyHistory(userId(jwt)));
     }
 
     @PostMapping("/today/regenerate")
