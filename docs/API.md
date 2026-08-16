@@ -582,7 +582,76 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 }
 ```
 
-## 10. 로컬 실행 환경 변수
+## 10. 홈 대시보드
+
+### 10.1 홈 통합 조회
+
+`GET /api/home`
+
+인증: JWT 필요
+
+홈 화면의 행성 온도계, 오늘 기록 상태, 예보 진행률, 내일 예보, 오늘 미션과 현재 PP 단계를 한 번에 반환합니다.
+
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "홈 대시보드를 조회했습니다.",
+  "data": {
+    "date": "2026-08-16",
+    "nickname": "여행자",
+    "planetTemperature": {
+      "score": 62,
+      "level": "주의",
+      "sampleCount": 8
+    },
+    "todayRecord": {
+      "recorded": false,
+      "recordId": null,
+      "recordCtaRequired": true
+    },
+    "forecastProgress": {
+      "validRecordCount": 3,
+      "targetRecordCount": 10,
+      "remainingRecordCount": 7,
+      "progressPercent": 30,
+      "dataBasedForecastReady": false,
+      "forecastTransitionReached": false,
+      "forecastMode": "ESTIMATED"
+    },
+    "tomorrowForecast": {
+      "riskScore": 62,
+      "riskLevel": "보통",
+      "source": "COLD_START",
+      "aiComment": "내일은 냉난방 노출에 조금 주의해 주세요.",
+      "primaryFactors": []
+    },
+    "todayMission": {
+      "id": 10,
+      "category": "수분 보충",
+      "title": "실내 습도 체크하기",
+      "estimatedMinutes": 2,
+      "isCompleted": false,
+      "streak": 3
+    },
+    "badge": {
+      "stage": 2,
+      "name": "탐사자",
+      "progressList": []
+    }
+  }
+}
+```
+
+- 행성 온도계는 최근 14일 예보 위험도를 사용하며 오늘과 전날 값에 2배 가중치를 적용합니다.
+- 위험도 기록이 없으면 `planetTemperature.score`는 `null`, 단계는 `데이터 없음`입니다.
+- 온도계 단계는 `0~39 안정`, `40~69 주의`, `70~100 이탈`입니다.
+- 내일 예보가 아직 생성되지 않았다면 `tomorrowForecast`는 `null`입니다.
+- `forecastMode`는 기록 10건 미만이면 `ESTIMATED`, 10건 이상이면 `DATA_BASED`입니다.
+- 오늘 미션이 없으면 기존 미션 생성 로직을 이용해 생성한 뒤 반환합니다.
+- PP 승급 팝업은 `badge.stage`를 클라이언트가 마지막 확인 단계와 비교해 한 번만 표시합니다.
+
+## 11. 로컬 실행 환경 변수
 
 MySQL 비밀번호가 없는 경우 IntelliJ 실행 구성에 다음 환경 변수를 설정합니다.
 
@@ -592,7 +661,7 @@ DB_USERNAME=root;DB_PASSWORD=;JWT_SECRET=skinearth-local-development-secret-key-
 
 `JWT_SECRET`은 32바이트 이상이어야 합니다. 위 값은 로컬 개발 예시이며 배포 환경에서는 별도의 안전한 값을 사용합니다.
 
-## 11. 권장 연동 테스트 순서
+## 12. 권장 연동 테스트 순서
 
 1. 회원가입
 2. 로그인 후 JWT 저장
