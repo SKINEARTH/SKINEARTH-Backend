@@ -45,21 +45,7 @@ public class MissionSlotSelector {
     private final MissionPriorityCalculator priorityCalculator;
 
     public String determineTodayCause(User user, LocalDate today) {
-        return determineTodayCause(user, today, Set.of());
-    }
-
-    public String determineTodayCause(User user, LocalDate today, String excludeCause) {
-        return determineTodayCause(user, today,
-                excludeCause == null ? Set.of() : Set.of(excludeCause));
-    }
-
-    public String determineTodayCause(User user, LocalDate today, Set<String> excludeCauses) {
         Map<MissionPriorityCalculator.MissionCategory, Integer> scores = calculateScores(user, today);
-
-        excludeCauses.stream()
-                .map(CAUSE_TO_CATEGORY::get)
-                .filter(java.util.Objects::nonNull)
-                .forEach(scores::remove);
 
         MissionPriorityCalculator.MissionCategory topCategory = scores.entrySet().stream()
                 .max(Map.Entry.comparingByValue())

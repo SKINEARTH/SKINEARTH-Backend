@@ -29,7 +29,7 @@ public class MissionCardGenerator {
 
     public MissionCard generate(User user, LocalDate today) {
         String cause = slotSelector.determineTodayCause(user, today);
-        return buildCard(user, today, cause, false, false);
+        return buildCard(user, today, cause);
     }
 
     public MissionSlotResult generateAlternative(
@@ -49,8 +49,8 @@ public class MissionCardGenerator {
         return selectAlternative(slotSelector.findEasyCandidates(cause, actionType));
     }
 
-    private MissionCard buildCard(User user, LocalDate today, String cause, boolean forceEasy, boolean isReplaced) {
-        boolean preferEasy = forceEasy || slotSelector.hasRecentFailure(user.getId(), today);
+    private MissionCard buildCard(User user, LocalDate today, String cause) {
+        boolean preferEasy = slotSelector.hasRecentFailure(user.getId(), today);
         List<MissionTemplate> candidates = slotSelector.findCandidates(cause, preferEasy);
         MissionSlotResult result = selectAlternative(candidates);
 
@@ -61,7 +61,7 @@ public class MissionCardGenerator {
                 .title(result.title())
                 .description(result.description())
                 .isCompleted(false)
-                .isReplaced(isReplaced)
+                .isReplaced(false)
                 .build();
     }
 
