@@ -6,9 +6,9 @@ import com.skinearth.backend.mission.ai.MissionCardGenerator;
 import com.skinearth.backend.mission.ai.PendingMissionCandidateStore;
 import com.skinearth.backend.mission.ai.TodayMissionPreferenceStore;
 import com.skinearth.backend.mission.exception.MissionActionException;
+import com.skinearth.backend.mission.dto.MissionCompletionResponse;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
-import com.skinearth.backend.mission.dto.WeeklyMissionHistoryResponse;
 import com.skinearth.backend.mission.entity.MissionCard;
 import com.skinearth.backend.mission.entity.MissionTemplate;
 import com.skinearth.backend.mission.repository.MissionCardRepository;
@@ -131,7 +131,7 @@ class MissionCardServiceTest {
     }
 
     @Test
-    void calculatesWeeklyCompletionRateAndDelayedFailure() {
+    void calculatesWeeklyCompletionRate() {
         MissionCard completed = card(TODAY.minusDays(4), false, false);
         completed.complete(LocalDateTime.of(2026, 8, 10, 18, 0));
         MissionCard failed = card(TODAY.minusDays(1), false, true);
@@ -142,18 +142,13 @@ class MissionCardServiceTest {
                 USER_ID, startDate, endDate
         )).thenReturn(List.of(pending, failed, completed));
 
-        WeeklyMissionHistoryResponse response = missionCardService.getWeeklyHistory(USER_ID, TODAY);
+        MissionCompletionResponse response = missionCardService.getWeeklyHistory(USER_ID, TODAY);
 
+        assertThat(response.startDate()).isEqualTo(startDate);
+        assertThat(response.endDate()).isEqualTo(endDate);
         assertThat(response.issuedCount()).isEqualTo(3);
         assertThat(response.completedCount()).isEqualTo(1);
         assertThat(response.completionRatePercent()).isEqualTo(33.3);
-        assertThat(response.cards()).extracting(MissionHistoryResponse::status)
-                .containsExactly(
-                        MissionExecutionStatus.PENDING,
-                        MissionExecutionStatus.FAILED,
-                        MissionExecutionStatus.COMPLETED
-                );
-        assertThat(response.cards().get(1).replaced()).isTrue();
     }
 
     @Test
@@ -164,11 +159,30 @@ class MissionCardServiceTest {
                 USER_ID, startDate, endDate
         )).thenReturn(List.of());
 
-        WeeklyMissionHistoryResponse response = missionCardService.getWeeklyHistory(USER_ID, null);
+        MissionCompletionResponse response = missionCardService.getWeeklyHistory(USER_ID, null);
 
         assertThat(response.issuedCount()).isZero();
         assertThat(response.completedCount()).isZero();
         assertThat(response.completionRatePercent()).isZero();
+    }
+
+    @Test
+    void calculatesMonthlyCompletionRateForCurrentMonth() {
+        MissionCard completed = card(LocalDate.of(2026, 8, 3), true, false);
+        MissionCard pending = card(LocalDate.of(2026, 8, 14), false, false);
+        LocalDate startDate = LocalDate.of(2026, 8, 1);
+        LocalDate endDate = LocalDate.of(2026, 8, 31);
+        when(missionCardRepository.findAllByUser_IdAndIssuedDateBetweenOrderByIssuedDateDesc(
+                USER_ID, startDate, endDate
+        )).thenReturn(List.of(pending, completed));
+
+        MissionCompletionResponse response = missionCardService.getMonthlyHistory(USER_ID);
+
+        assertThat(response.startDate()).isEqualTo(startDate);
+        assertThat(response.endDate()).isEqualTo(endDate);
+        assertThat(response.issuedCount()).isEqualTo(2);
+        assertThat(response.completedCount()).isEqualTo(1);
+        assertThat(response.completionRatePercent()).isEqualTo(50.0);
     }
 
     @Test
