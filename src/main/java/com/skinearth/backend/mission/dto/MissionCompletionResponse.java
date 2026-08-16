@@ -2,7 +2,7 @@ package com.skinearth.backend.mission.dto;
 
 import java.time.LocalDate;
 
-public record MonthlyMissionCompletionResponse(
+public record MissionCompletionResponse(
         LocalDate startDate,
         LocalDate endDate,
         int issuedCount,
