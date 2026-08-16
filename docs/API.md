@@ -286,11 +286,11 @@ Authorization: Bearer {accessToken}
 
 스트릭은 전날 기록부터 연속된 일수를 계산합니다. 전날 기록이 없다면 `0`입니다.
 
-## 6. 내일의 궤도 예보 — 콜드스타트
+## 6. 내일의 궤도 예보
 
-개인화 설문을 완료했으며 유효 기록이 10건 미만인 사용자가 이용합니다.
+개인화 설문을 완료한 사용자가 이용합니다. 유효 기록이 10건 미만이면 콜드스타트 프리셋을, 10건 이상이면 개인 기록 기반 통계 결과를 사용합니다.
 
-### 6.1 콜드스타트 예보 생성
+### 6.1 예보 생성
 
 `POST /api/forecasts`
 
@@ -309,7 +309,7 @@ Authorization: Bearer {accessToken}
 - 사용자 상태와 피부 고민으로 정한 상위 원인 2개의 가중평균을 반올림하여 위험도를 계산합니다.
 - 같은 날짜의 예보는 한 번만 생성할 수 있습니다.
 
-성공: `201 Created`. 응답의 `source`는 `COLD_START`이며 `primaryFactors`에 원인, 우선순위 점수와 순위가 포함됩니다.
+성공: `201 Created`. 응답의 `source`는 `COLD_START` 또는 `DATA_BASED`이며 `primaryFactors`에 주요 원인과 등급이 포함됩니다.
 
 ### 6.2 내일 예보 조회
 
@@ -354,9 +354,42 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 
 기록이 한 건도 없으면 `averageSkinCondition`은 `null`입니다.
 
+### 주요 원인 변화 타임라인
+
+`GET /api/history/cause-timeline/weekly`
+
+`GET /api/history/cause-timeline/monthly`
+
+- 주간은 이번 주 월요일~일요일, 월간은 이번 달 1일~말일의 일일 기록을 조회합니다.
+- 각 기록의 다섯 원인을 위험도로 환산해 가장 높은 원인을 그날의 주요 원인으로 선택합니다.
+- 동일한 원인과 등급이 날짜상 연속될 때 하나의 구간으로 묶어 최신순으로 반환합니다.
+- 기록이 없으면 정상 응답으로 빈 배열을 반환합니다.
+
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "주간 주요 원인 변화를 조회했습니다.",
+  "data": [
+    {
+      "startDate": "2026-08-14",
+      "endDate": "2026-08-15",
+      "factorName": "에어컨 노출",
+      "level": "위험"
+    },
+    {
+      "startDate": "2026-08-12",
+      "endDate": "2026-08-13",
+      "factorName": "스트레스",
+      "level": "주의"
+    }
+  ]
+}
+```
+
 ## 8. 마이페이지
 
-### 7.1 마이페이지 정보 조회
+### 8.1 마이페이지 정보 조회
 
 `GET /api/users/me`
 
@@ -379,7 +412,7 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 }
 ```
 
-### 7.2 데이터 전체 초기화
+### 8.2 데이터 전체 초기화
 
 `POST /api/users/me/data-reset`
 
@@ -403,11 +436,34 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 - 가입일
 - 약관 동의 정보
 
+### 8.3 PP 여행 단계 조회
+
+`GET /api/users/stage`
+
+현재 PP 단계와 다음 단계까지의 진행 조건을 조회합니다.
+
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "단계 조회 성공",
+  "data": {
+    "stage": 1,
+    "name": "관측자",
+    "description": "가장 기본적인 상태의 인실리씨 PP입니다.",
+    "conditionDescription": "레코드를 10건 이상 기록하세요.",
+    "progressList": [
+      {"label": "궤도를 기록하기", "current": 3, "target": 10}
+    ]
+  }
+}
+```
+
 ## 9. 미션 이행
 
 미션 생성 기능에서 오늘의 미션 카드가 발행된 이후 사용할 수 있습니다.
 
-### 8.1 오늘 미션 조회
+### 9.1 오늘 미션 조회
 
 `GET /api/missions/today`
 
@@ -421,15 +477,17 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
     "category": "긴장 완화",
     "title": "짧은 산책하기",
     "description": "잠시 걸으며 긴장을 풀어보세요.",
+    "estimatedMinutes": 3,
     "issuedDate": "2026-08-14",
     "isCompleted": false,
     "isReplaced": false,
-    "completedAt": null
+    "completedAt": null,
+    "streak": 2
   }
 }
 ```
 
-### 8.2 미션 완료
+### 9.2 미션 완료
 
 `POST /api/missions/{missionCardId}/complete`
 
@@ -454,13 +512,12 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 }
 ```
 
-### 8.3 주간 미션 이행률 조회
+### 9.3 주간 미션 완료율 조회
 
 `GET /api/missions/history/weekly?date={date}`
 
 - `date`는 선택이며 생략하면 오늘을 기준으로 합니다.
-- 해당 주 월요일~일요일의 카드가 반환됩니다.
-- 발행일이 지난 미체크 카드는 조회 시 `FAILED`로 표시됩니다.
+- 해당 주 월요일~일요일에 발행된 미션을 집계합니다.
 
 ```json
 {
@@ -472,18 +529,55 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
     "endDate": "2026-08-16",
     "issuedCount": 3,
     "completedCount": 1,
-    "completionRatePercent": 33.3,
-    "cards": [
-      {
-        "missionCardId": 10,
-        "category": "긴장 완화",
-        "issuedDate": "2026-08-14",
-        "completed": false,
-        "replaced": false,
-        "completedAt": null,
-        "status": "PENDING"
-      }
-    ]
+    "completionRatePercent": 33.3
+  }
+}
+```
+
+### 9.4 월간 미션 완료율 조회
+
+`GET /api/missions/history/monthly`
+
+이번 달 1일~말일에 발행된 미션의 완료율을 집계합니다.
+
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "월간 미션 완료율을 조회했습니다.",
+  "data": {
+    "startDate": "2026-08-01",
+    "endDate": "2026-08-31",
+    "issuedCount": 12,
+    "completedCount": 9,
+    "completionRatePercent": 75.0
+  }
+}
+```
+
+### 9.5 미션 퀵리플라이
+
+모든 요청은 오늘 발행된 미션 카드가 있어야 하며 Request Body는 없습니다.
+
+| 기능 | Method / Path | 설명 |
+| --- | --- | --- |
+| 다른 미션 보기 | `POST /api/missions/today/regenerate` | 새로운 대체 미션 후보를 조회합니다. |
+| 더 쉬운 미션으로 | `POST /api/missions/today/adjust-intensity` | 현재 행동 유형을 유지한 가벼운 강도의 후보를 조회합니다. 이미 가벼운 강도면 `MISSION_ALREADY_LIGHT`(409)를 반환합니다. |
+| 이 카테고리 그만 보기 | `POST /api/missions/today/exclude-category` | 현재 카테고리를 당일 추천 제외 목록에 추가합니다. 현재 카드는 유지됩니다. |
+| 대체 미션 확정 | `POST /api/missions/today/confirm` | 마지막으로 조회한 대체 후보를 오늘 미션으로 확정합니다. |
+
+대체 미션 조회 응답 예시:
+
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "다른 미션을 조회했습니다.",
+  "data": {
+    "title": "지금 가볍게 5분 심호흡하기",
+    "description": "편안하게 숨을 깊게 들이쉬고 천천히 내쉬며 심호흡해 보세요.",
+    "category": "긴장 완화",
+    "estimatedMinutes": 5
   }
 }
 ```
@@ -507,13 +601,5 @@ DB_USERNAME=root;DB_PASSWORD=;JWT_SECRET=skinearth-local-development-secret-key-
 5. 오늘 기록 저장·조회·수정
 6. 주간·월간 히스토리 조회
 7. 마이페이지 조회
-8. 미션이 발행된 경우 오늘 미션 조회·완료·주간 이행률 조회
+8. 미션이 발행된 경우 오늘 미션 조회·완료·주간·월간 완료율 및 퀵리플라이 조회
 9. 테스트 종료 후 필요하면 데이터 초기화
-
-## 12. 아직 완료되지 않은 연동
-
-다음 항목은 구현 또는 기획 기준 확정 후 이 문서에 추가합니다.
-
-- 4.6 위험도·등급·원인·AI 코멘트를 포함한 예보 결과 저장
-- 2.1~2.5 홈 통합 API
-- 5.4 미션 교체 및 퀵리플라이 연동
