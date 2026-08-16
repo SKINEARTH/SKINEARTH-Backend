@@ -2,6 +2,7 @@ package com.skinearth.backend.history.service;
 
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
+import com.skinearth.backend.history.dto.CauseTimelineItemResponse;
 import com.skinearth.backend.history.dto.HistoryPeriod;
 import com.skinearth.backend.history.dto.HistoryResponse;
 import com.skinearth.backend.user.entity.User;
@@ -96,11 +97,59 @@ class HistoryServiceTest {
         assertThat(response.endDate()).isEqualTo(endDate);
     }
 
+    @Test
+    void groupsConsecutiveSameFactorsAndReturnsLatestFirst() {
+        LocalDate startDate = LocalDate.of(2026, 8, 10);
+        LocalDate endDate = LocalDate.of(2026, 8, 16);
+        when(dailyRecordRepository.findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
+                USER_ID, startDate, endDate
+        )).thenReturn(List.of(
+                record(LocalDate.of(2026, 8, 10), null, null, 8, null, null),
+                record(LocalDate.of(2026, 8, 11), null, null, 8, null, null),
+                record(LocalDate.of(2026, 8, 12), null, null, null, 3, null),
+                record(LocalDate.of(2026, 8, 13), null, null, null, 3, null),
+                record(LocalDate.of(2026, 8, 14), 5, null, null, null, null),
+                record(LocalDate.of(2026, 8, 15), 5, null, null, null, null),
+                record(LocalDate.of(2026, 8, 16), 3, null, null, null, null)
+        ));
+
+        List<CauseTimelineItemResponse> response = historyService.getCauseTimeline(USER_ID, HistoryPeriod.WEEKLY);
+
+        assertThat(response).containsExactly(
+                new CauseTimelineItemResponse(
+                        LocalDate.of(2026, 8, 16), LocalDate.of(2026, 8, 16), "에어컨 노출", "주의"
+                ),
+                new CauseTimelineItemResponse(
+                        LocalDate.of(2026, 8, 14), LocalDate.of(2026, 8, 15), "에어컨 노출", "위험"
+                ),
+                new CauseTimelineItemResponse(
+                        LocalDate.of(2026, 8, 12), LocalDate.of(2026, 8, 13), "스트레스", "주의"
+                ),
+                new CauseTimelineItemResponse(
+                        LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 11), "수면 부족", "안정"
+                )
+        );
+    }
+
     private DailyRecord record(LocalDate date, int skinCondition) {
         return DailyRecord.builder()
                 .user(user)
                 .recordDate(date)
                 .skinCondition(skinCondition)
+                .build();
+    }
+
+    private DailyRecord record(LocalDate date, Integer acLevel, Integer screenTime, Integer sleepHours,
+                               Integer stressLevel, Integer mealRegularity) {
+        return DailyRecord.builder()
+                .user(user)
+                .recordDate(date)
+                .acLevel(acLevel)
+                .screenTime(screenTime)
+                .sleepHours(sleepHours)
+                .stressLevel(stressLevel)
+                .mealRegularity(mealRegularity)
+                .skinCondition(3)
                 .build();
     }
 }
