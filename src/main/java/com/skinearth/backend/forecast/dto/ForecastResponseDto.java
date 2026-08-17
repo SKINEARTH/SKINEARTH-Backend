@@ -14,6 +14,11 @@ import java.util.ArrayList;
 public class ForecastResponseDto {
     private Long id;
     private LocalDate targetDate;
+    private Integer inputAc;
+    private Integer inputScreenTime;
+    private Integer inputSleepHours;
+    private Integer inputStress;
+    private Integer inputMeal;
     private Integer riskScore;
     private String riskLevel;
     private String source;
@@ -39,6 +44,11 @@ public class ForecastResponseDto {
         return ForecastResponseDto.builder()
                 .id(forecast.getId())
                 .targetDate(forecast.getTargetDate())
+                .inputAc(forecast.getInputAc())
+                .inputScreenTime(forecast.getInputScreenTime())
+                .inputSleepHours(forecast.getInputSleepHours())
+                .inputStress(forecast.getInputStress())
+                .inputMeal(forecast.getInputMeal())
                 .riskScore(forecast.getRiskScore())
                 .riskLevel(forecast.getRiskLevel())
                 .source(forecast.getSource())

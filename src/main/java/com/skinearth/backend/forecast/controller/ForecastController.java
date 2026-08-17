@@ -6,7 +6,6 @@ import com.skinearth.backend.forecast.dto.ForecastResponseDto;
 import com.skinearth.backend.forecast.service.ForecastService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -18,11 +17,10 @@ public class ForecastController {
     private final ForecastService forecastService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ForecastResponseDto> createForecast(
+    public ApiResponse<ForecastResponseDto> saveOrUpdateForecast(
             @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ForecastRequestDto request) {
-        return ApiResponse.success(201, "콜드스타트 예보를 저장했습니다.",
-                forecastService.createForecast(userId(jwt), request));
+        return ApiResponse.success(200, "내일의 예보를 계산했습니다.",
+                forecastService.saveOrUpdateForecast(userId(jwt), request));
     }
 
     @GetMapping
