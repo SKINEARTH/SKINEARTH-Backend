@@ -34,10 +34,10 @@ public class ForecastResponseDto {
         if (factors.isEmpty()) {
             List<ForecastFactorResponse> dataFactors = new ArrayList<>();
             if (forecast.getPrimaryFactor1Name() != null)
-                dataFactors.add(new ForecastFactorResponse(forecast.getPrimaryFactor1Name(),
+                dataFactors.add(new ForecastFactorResponse(ForecastFactorResponse.displayNameOf(forecast.getPrimaryFactor1Name()),
                         forecast.getPrimaryFactor1Level(), null, 1));
             if (forecast.getPrimaryFactor2Name() != null)
-                dataFactors.add(new ForecastFactorResponse(forecast.getPrimaryFactor2Name(),
+                dataFactors.add(new ForecastFactorResponse(ForecastFactorResponse.displayNameOf(forecast.getPrimaryFactor2Name()),
                         forecast.getPrimaryFactor2Level(), null, 2));
             factors = List.copyOf(dataFactors);
         }

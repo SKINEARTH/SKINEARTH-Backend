@@ -39,11 +39,11 @@ public class ForecastService {
     private static final double SLEEP_OPTIMAL_HOURS = 7.0;
     private static final String FALLBACK_COMMENT = "아직 데이터를 분석하는 중이에요. 오늘도 꾸준히 기록하며 피부 컨디션을 함께 살펴봐요!";
     private static final Map<ForecastFactorType, String> FACTOR_NAME_KO = Map.of(
-            ForecastFactorType.AC, "냉난방",
-            ForecastFactorType.SCREEN_TIME, "스크린타임",
-            ForecastFactorType.SLEEP, "수면",
+            ForecastFactorType.AC, "냉난방 노출",
+            ForecastFactorType.SCREEN_TIME, "화면 노출",
+            ForecastFactorType.SLEEP, "수면 시간",
             ForecastFactorType.STRESS, "스트레스",
-            ForecastFactorType.MEAL_REGULARITY, "식사규칙성"
+            ForecastFactorType.MEAL_REGULARITY, "식사 규칙성"
     );
 
     private final ForecastRepository forecastRepository;
@@ -56,17 +56,43 @@ public class ForecastService {
     private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
 
     @Transactional
-    public ForecastResponseDto saveOrUpdateForecast(Long userId, ForecastRequestDto request) {
+    public ForecastResponseDto createForecast(Long userId, ForecastRequestDto request) {
+        LocalDate targetDate = LocalDate.now(clock).plusDays(1);
+        User user = findUser(userId);
+        if (!user.isPersonalizationCompleted())
+            throw new IllegalArgumentException("개인화 설문을 먼저 완료해 주세요.");
+
+        if (forecastRepository.findByUser_IdAndTargetDate(userId, targetDate).isPresent()) {
+            throw new IllegalArgumentException("내일의 예보가 이미 존재합니다.");
+        }
+
+        Forecast forecast = Forecast.builder()
+                .user(user)
+                .targetDate(targetDate)
+                .build();
+
+        forecast.updateInputs(
+                request.inputAc(),
+                request.inputScreenTime(),
+                request.inputSleepHours(),
+                request.inputStress(),
+                request.inputMeal()
+        );
+
+        recalculateForecast(forecast, user, request, userId);
+
+        return ForecastResponseDto.from(forecastRepository.save(forecast));
+    }
+
+    @Transactional
+    public ForecastResponseDto updateForecast(Long userId, ForecastRequestDto request) {
         LocalDate targetDate = LocalDate.now(clock).plusDays(1);
         User user = findUser(userId);
         if (!user.isPersonalizationCompleted())
             throw new IllegalArgumentException("개인화 설문을 먼저 완료해 주세요.");
 
         Forecast forecast = forecastRepository.findByUser_IdAndTargetDate(userId, targetDate)
-                .orElseGet(() -> Forecast.builder()
-                        .user(user)
-                        .targetDate(targetDate)
-                        .build());
+                .orElseThrow(() -> new NotFoundException("내일의 예보가 없습니다. 먼저 예보를 생성해 주세요."));
 
         forecast.updateInputs(
                 request.inputAc(),
@@ -119,17 +145,13 @@ public class ForecastService {
         List<DailyRecord> records = dailyRecordRepository.findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
                 userId, LocalDate.now(clock).minusDays(30), LocalDate.now(clock));
         List<FactorCorrelation> all = new ArrayList<>();
-        all.add(factor("냉난방", records, DailyRecord::getAcLevel, request.inputAc(), FactorType.NORMAL));
-        all.add(factor("스크린타임", records, DailyRecord::getScreenTime, request.inputScreenTime(), FactorType.NORMAL));
-        all.add(factor("수면", records, DailyRecord::getSleepHours, request.inputSleepHours(), FactorType.SLEEP));
+        all.add(factor("냉난방 노출", records, DailyRecord::getAcLevel, request.inputAc(), FactorType.NORMAL));
+        all.add(factor("화면 노출", records, DailyRecord::getScreenTime, request.inputScreenTime(), FactorType.NORMAL));
+        all.add(factor("수면 시간", records, DailyRecord::getSleepHours, request.inputSleepHours(), FactorType.SLEEP));
         all.add(factor("스트레스", records, DailyRecord::getStressLevel, request.inputStress(), FactorType.NORMAL));
-        all.add(factor("식사규칙성", records, DailyRecord::getMealRegularity, request.inputMeal(), FactorType.INVERSE));
+        all.add(factor("식사 규칙성", records, DailyRecord::getMealRegularity, request.inputMeal(), FactorType.INVERSE));
+        double score = riskScoreCalculator.calculateRiskScore(all);
         List<FactorCorrelation> primary = riskScoreCalculator.selectPrimaryFactors(all);
-        if (primary.isEmpty()) {
-            forecast.applyRiskResult(50, "보통", "데이터 기반", (int) recordCount, null, null, null, null);
-            return;
-        }
-        double score = riskScoreCalculator.calculateRiskScore(primary);
         String factor2Name = primary.size() > 1 ? primary.get(1).variableName() : null;
         String factor2Level = primary.size() > 1 ? riskScoreCalculator.determineRiskLevel(primary.get(1).normalizedInput()) : null;
         forecast.applyRiskResult((int) Math.round(score), riskScoreCalculator.determineRiskLevel(score), "데이터 기반",

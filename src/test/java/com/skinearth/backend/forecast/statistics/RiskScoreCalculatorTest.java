@@ -11,6 +11,41 @@ class RiskScoreCalculatorTest {
     private final RiskScoreCalculator calculator = new RiskScoreCalculator();
 
     @Test
+    void selectsPrimaryFactorsByCurrentRiskInsteadOfCorrelationRank() {
+        List<FactorCorrelation> factors = List.of(
+                new FactorCorrelation("ac", -0.9, 20.0),
+                new FactorCorrelation("screen", -0.2, 75.0),
+                new FactorCorrelation("meal", -0.1, 100.0)
+        );
+
+        List<FactorCorrelation> result = calculator.selectPrimaryFactors(factors);
+
+        assertThat(result).extracting(FactorCorrelation::variableName)
+                .containsExactly("meal", "screen");
+    }
+
+    @Test
+    void calculatesRiskWithAllFactorsInsteadOfOnlyDisplayedPrimaryFactors() {
+        List<FactorCorrelation> factors = List.of(
+                new FactorCorrelation("highCorrelationSafe", -0.8, 0.0),
+                new FactorCorrelation("riskOne", -0.1, 100.0),
+                new FactorCorrelation("riskTwo", -0.1, 100.0)
+        );
+
+        assertThat(calculator.calculateRiskScore(factors)).isCloseTo(20.0, within(0.001));
+    }
+
+    @Test
+    void usesEqualWeightsWhenNoFactorHasCorrelationEvidence() {
+        List<FactorCorrelation> factors = List.of(
+                new FactorCorrelation("first", 0.0, 100.0),
+                new FactorCorrelation("second", 0.0, 0.0)
+        );
+
+        assertThat(calculator.calculateRiskScore(factors)).isEqualTo(50.0);
+    }
+
+    @Test
     void 완벽한_양의_상관관계면_상관계수는_1이다() {
         // given
         List<Double> x = List.of(1.0, 2.0, 3.0, 4.0, 5.0);
@@ -73,7 +108,7 @@ class RiskScoreCalculatorTest {
 
         List<FactorCorrelation> result = calculator.selectPrimaryFactors(factors);
 
-        assertThat(result).hasSize(1);
+        assertThat(result).hasSize(2);
         assertThat(result.get(0).variableName()).isEqualTo("스크린타임");
     }
 
@@ -87,7 +122,7 @@ class RiskScoreCalculatorTest {
 
         List<FactorCorrelation> result = calculator.selectPrimaryFactors(factors);
 
-        assertThat(result).isEmpty();
+        assertThat(result).hasSize(2);
     }
 
     @Test
@@ -110,7 +145,7 @@ class RiskScoreCalculatorTest {
         double result = calculator.calculateRiskScore(factors);
 
         // then: 보호요인이라 뒤집어야 함 → 100-80=20
-        assertThat(result).isCloseTo(20.0, within(0.001));
+        assertThat(result).isCloseTo(80.0, within(0.001));
     }
 
     @Test
@@ -140,7 +175,7 @@ class RiskScoreCalculatorTest {
 
         double result = calculator.calculateRiskScore(factors);
 
-        assertThat(result).isCloseTo(81.43, within(0.01));
+        assertThat(result).isCloseTo(64.29, within(0.01));
     }
 
     @Test

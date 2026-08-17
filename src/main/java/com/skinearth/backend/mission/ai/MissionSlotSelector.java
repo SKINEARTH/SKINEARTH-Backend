@@ -31,12 +31,16 @@ public class MissionSlotSelector {
             MissionPriorityCalculator.MissionCategory.MEAL_REGULARITY, "식사규칙성"
     );
 
-    private static final Map<String, MissionPriorityCalculator.MissionCategory> CAUSE_TO_CATEGORY = Map.of(
-            "냉난방", MissionPriorityCalculator.MissionCategory.HYDRATION,
-            "스크린타임", MissionPriorityCalculator.MissionCategory.INDOOR_CARE,
-            "수면", MissionPriorityCalculator.MissionCategory.SLEEP_PREP,
-            "스트레스", MissionPriorityCalculator.MissionCategory.STRESS_RELIEF,
-            "식사규칙성", MissionPriorityCalculator.MissionCategory.MEAL_REGULARITY
+    private static final Map<String, MissionPriorityCalculator.MissionCategory> CAUSE_TO_CATEGORY = Map.ofEntries(
+            Map.entry("냉난방", MissionPriorityCalculator.MissionCategory.HYDRATION),
+            Map.entry("냉난방 노출", MissionPriorityCalculator.MissionCategory.HYDRATION),
+            Map.entry("스크린타임", MissionPriorityCalculator.MissionCategory.INDOOR_CARE),
+            Map.entry("화면 노출", MissionPriorityCalculator.MissionCategory.INDOOR_CARE),
+            Map.entry("수면", MissionPriorityCalculator.MissionCategory.SLEEP_PREP),
+            Map.entry("수면 시간", MissionPriorityCalculator.MissionCategory.SLEEP_PREP),
+            Map.entry("스트레스", MissionPriorityCalculator.MissionCategory.STRESS_RELIEF),
+            Map.entry("식사규칙성", MissionPriorityCalculator.MissionCategory.MEAL_REGULARITY),
+            Map.entry("식사 규칙성", MissionPriorityCalculator.MissionCategory.MEAL_REGULARITY)
     );
 
     private final ForecastRepository forecastRepository;
