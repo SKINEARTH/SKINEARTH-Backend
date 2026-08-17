@@ -32,6 +32,10 @@ public class TodayMissionPreferenceStore {
         preferences(userId, date).seenActionTypes().clear();
     }
 
+    public void clearForUser(Long userId) {
+        preferencesByDay.keySet().removeIf(key -> key.userId().equals(userId));
+    }
+
     private Preferences preferences(Long userId, LocalDate date) {
         return preferencesByDay.computeIfAbsent(new UserDayKey(userId, date), ignored -> new Preferences());
     }
