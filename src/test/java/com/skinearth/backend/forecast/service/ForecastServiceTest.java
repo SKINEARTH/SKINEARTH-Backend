@@ -100,6 +100,7 @@ class ForecastServiceTest {
         assertThat(response.getInputStress()).isEqualTo(3);
         assertThat(response.getInputMeal()).isEqualTo(2);
         assertThat(response.getPrimaryFactors()).hasSize(1);
+        assertThat(response.getPrimaryFactors().get(0).name()).isEqualTo("냉난방 노출");
     }
 
     @Test
