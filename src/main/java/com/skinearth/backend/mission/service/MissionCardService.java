@@ -6,6 +6,7 @@ import com.skinearth.backend.mission.ai.MissionCardGenerator;
 import com.skinearth.backend.mission.ai.PendingMissionCandidateStore;
 import com.skinearth.backend.mission.ai.TodayMissionPreferenceStore;
 import com.skinearth.backend.mission.dto.MissionAlternativeResponse;
+import com.skinearth.backend.mission.dto.MissionAchievementLevel;
 import com.skinearth.backend.mission.dto.MissionCategoryExclusionResponse;
 import com.skinearth.backend.mission.dto.MissionCardResponse;
 import com.skinearth.backend.mission.dto.MissionCompletionResponse;
@@ -23,6 +24,7 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Set;
@@ -181,12 +183,12 @@ public class MissionCardService {
         int completedCount = (int) cards.stream()
                 .filter(card -> Boolean.TRUE.equals(card.getIsCompleted()))
                 .count();
-        double completionRate = cards.isEmpty()
-                ? 0.0
-                : Math.round(completedCount * 1000.0 / cards.size()) / 10.0;
+        int targetCount = Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate) + 1);
+        double completionRate = Math.round(completedCount * 1000.0 / targetCount) / 10.0;
 
         return new MissionCompletionResponse(
-                startDate, endDate, cards.size(), completedCount, completionRate
+                startDate, endDate, targetCount, cards.size(), completedCount, completionRate,
+                MissionAchievementLevel.from(completionRate)
         );
     }
 

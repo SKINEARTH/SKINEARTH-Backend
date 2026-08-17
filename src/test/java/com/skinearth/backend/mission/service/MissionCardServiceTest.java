@@ -7,6 +7,7 @@ import com.skinearth.backend.mission.ai.PendingMissionCandidateStore;
 import com.skinearth.backend.mission.ai.TodayMissionPreferenceStore;
 import com.skinearth.backend.mission.exception.MissionActionException;
 import com.skinearth.backend.mission.dto.MissionCompletionResponse;
+import com.skinearth.backend.mission.dto.MissionAchievementLevel;
 import com.skinearth.backend.mission.dto.MissionExecutionStatus;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
 import com.skinearth.backend.mission.entity.MissionCard;
@@ -146,9 +147,11 @@ class MissionCardServiceTest {
 
         assertThat(response.startDate()).isEqualTo(startDate);
         assertThat(response.endDate()).isEqualTo(endDate);
+        assertThat(response.targetCount()).isEqualTo(7);
         assertThat(response.issuedCount()).isEqualTo(3);
         assertThat(response.completedCount()).isEqualTo(1);
-        assertThat(response.completionRatePercent()).isEqualTo(33.3);
+        assertThat(response.completionRatePercent()).isEqualTo(14.3);
+        assertThat(response.achievementLevel()).isEqualTo(MissionAchievementLevel.LOW_PROGRESS);
     }
 
     @Test
@@ -161,9 +164,11 @@ class MissionCardServiceTest {
 
         MissionCompletionResponse response = missionCardService.getWeeklyHistory(USER_ID);
 
+        assertThat(response.targetCount()).isEqualTo(7);
         assertThat(response.issuedCount()).isZero();
         assertThat(response.completedCount()).isZero();
         assertThat(response.completionRatePercent()).isZero();
+        assertThat(response.achievementLevel()).isEqualTo(MissionAchievementLevel.LOW_PROGRESS);
     }
 
     @Test
@@ -180,9 +185,11 @@ class MissionCardServiceTest {
 
         assertThat(response.startDate()).isEqualTo(startDate);
         assertThat(response.endDate()).isEqualTo(endDate);
+        assertThat(response.targetCount()).isEqualTo(31);
         assertThat(response.issuedCount()).isEqualTo(2);
         assertThat(response.completedCount()).isEqualTo(1);
-        assertThat(response.completionRatePercent()).isEqualTo(50.0);
+        assertThat(response.completionRatePercent()).isEqualTo(3.2);
+        assertThat(response.achievementLevel()).isEqualTo(MissionAchievementLevel.LOW_PROGRESS);
     }
 
     @Test
