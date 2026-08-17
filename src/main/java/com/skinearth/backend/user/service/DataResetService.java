@@ -3,6 +3,8 @@ package com.skinearth.backend.user.service;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
 import com.skinearth.backend.forecast.repository.ForecastRepository;
+import com.skinearth.backend.mission.ai.PendingMissionCandidateStore;
+import com.skinearth.backend.mission.ai.TodayMissionPreferenceStore;
 import com.skinearth.backend.mission.repository.MissionCardRepository;
 import com.skinearth.backend.user.dto.DataResetResponse;
 import com.skinearth.backend.user.entity.User;
@@ -19,6 +21,8 @@ public class DataResetService {
     private final DailyRecordRepository dailyRecordRepository;
     private final ForecastRepository forecastRepository;
     private final MissionCardRepository missionCardRepository;
+    private final PendingMissionCandidateStore pendingMissionCandidateStore;
+    private final TodayMissionPreferenceStore todayMissionPreferenceStore;
 
     @Transactional
     public DataResetResponse reset(Long userId) {
@@ -28,6 +32,8 @@ public class DataResetService {
         long deletedDailyRecordCount = dailyRecordRepository.deleteByUserId(userId);
         long deletedForecastCount = forecastRepository.deleteByUser_Id(userId);
         long deletedMissionCardCount = missionCardRepository.deleteByUser_Id(userId);
+        pendingMissionCandidateStore.clearForUser(userId);
+        todayMissionPreferenceStore.clearForUser(userId);
         user.resetServiceData();
 
         return new DataResetResponse(

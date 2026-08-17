@@ -50,6 +50,9 @@ public class MissionCardService {
 
     private MissionCard generateAndSaveTodayCard(Long userId, LocalDate today) {
         User user = findUser(userId);
+        if (!user.isPersonalizationCompleted()) {
+            throw new IllegalArgumentException("개인화 설문을 먼저 완료해 주세요.");
+        }
         MissionCard card = missionCardGenerator.generate(user, today);
         return missionCardRepository.save(card);
     }
@@ -62,7 +65,7 @@ public class MissionCardService {
                 .orElseThrow(() -> new NotFoundException("오늘 발행된 미션 카드가 없습니다."));
 
         MissionCardGenerator.MissionSlotResult result = generateAlternative(userId, user, today, current);
-        pendingStore.save(userId, new PendingMissionCandidateStore.PendingCandidate(
+        pendingStore.save(userId, today, new PendingMissionCandidateStore.PendingCandidate(
                 result.template(), result.title(), result.description()));
 
         return new MissionAlternativeResponse(
@@ -95,7 +98,7 @@ public class MissionCardService {
             );
         }
 
-        pendingStore.save(userId, new PendingMissionCandidateStore.PendingCandidate(
+        pendingStore.save(userId, today, new PendingMissionCandidateStore.PendingCandidate(
                 result.template(), result.title(), result.description()));
 
         return new MissionAlternativeResponse(
@@ -120,11 +123,14 @@ public class MissionCardService {
         MissionCard current = missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
                 .orElseThrow(() -> new NotFoundException("오늘 발행된 미션 카드가 없습니다."));
 
-        PendingMissionCandidateStore.PendingCandidate candidate = pendingStore.get(userId)
-                .orElseThrow(() -> new IllegalStateException("확정할 후보 미션이 없습니다. 먼저 다른 미션을 조회해 주세요."));
+        PendingMissionCandidateStore.PendingCandidate candidate = pendingStore.get(userId, today)
+                .orElseThrow(() -> new MissionActionException(
+                        "MISSION_CANDIDATE_NOT_FOUND",
+                        "선택할 대체 미션이 없습니다. 다시 다른 미션을 조회해 주세요."
+                ));
 
         current.updateContent(candidate.template(), candidate.title(), candidate.description());
-        pendingStore.clear(userId);
+        pendingStore.clear(userId, today);
         preferenceStore.clearSeenActionTypes(userId, today);
 
         return responseWithStreak(missionCardRepository.save(current), userId, today);
@@ -220,9 +226,15 @@ public class MissionCardService {
                         user, today, current.getTemplate().getCategory(), excludedCategories, Set.of(currentActionType)
                 );
             } catch (MissionCardGenerator.NoMissionCandidateException ignored) {
-                result = missionCardGenerator.generateAlternative(
-                        user, today, current.getTemplate().getCategory(), excludedCategories, Set.of()
-                );
+                try {
+                    result = missionCardGenerator.generateAlternative(
+                            user, today, current.getTemplate().getCategory(), excludedCategories, Set.of()
+                    );
+                } catch (MissionCardGenerator.NoMissionCandidateException noCandidateWithExclusions) {
+                    result = missionCardGenerator.generateAlternative(
+                            user, today, current.getTemplate().getCategory(), Set.of(), Set.of()
+                    );
+                }
             }
         }
 

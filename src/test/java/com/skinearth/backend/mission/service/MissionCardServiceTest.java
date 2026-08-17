@@ -204,7 +204,7 @@ class MissionCardServiceTest {
     void includesStreakWhenAlternativeMissionIsConfirmed() {
         MissionCard current = card(TODAY, false, false);
         MissionTemplate alternativeTemplate = template("cause-b", "action-b", "집중");
-        pendingStore.save(USER_ID, new PendingMissionCandidateStore.PendingCandidate(
+        pendingStore.save(USER_ID, TODAY, new PendingMissionCandidateStore.PendingCandidate(
                 alternativeTemplate, "alternative", "alternative description"
         ));
         when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
@@ -290,6 +290,41 @@ class MissionCardServiceTest {
         assertThat(response.category()).isEqualTo(template.getCategory());
         assertThat(preferenceStore.getExcludedCategories(USER_ID, TODAY)).containsExactly(template.getCategory());
         assertThat(preferenceStore.getExcludedCategories(USER_ID, TODAY.plusDays(1))).isEmpty();
+    }
+
+    @Test
+    void doesNotConfirmYesterdayPendingCandidate() {
+        MissionCard current = card(TODAY, false, false);
+        pendingStore.save(USER_ID, TODAY.minusDays(1), new PendingMissionCandidateStore.PendingCandidate(
+                template("cause-b", "action-b", "집중"), "yesterday", "yesterday description"
+        ));
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+
+        assertThatThrownBy(() -> missionCardService.confirmAlternative(USER_ID))
+                .isInstanceOf(MissionActionException.class)
+                .extracting("code")
+                .isEqualTo("MISSION_CANDIDATE_NOT_FOUND");
+    }
+
+    @Test
+    void fallsBackToAllCategoriesWhenExcludedCategoriesHaveNoCandidate() {
+        MissionCard current = card(TODAY, false, false);
+        MissionTemplate fallbackTemplate = template("cause-b", "action-b", "집중");
+        preferenceStore.excludeCategory(USER_ID, TODAY, "category");
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(current));
+        when(missionCardGenerator.generateAlternative(
+                eq(user), eq(TODAY), eq(template.getCategory()), anySet(), anySet()
+        )).thenThrow(new MissionCardGenerator.NoMissionCandidateException())
+                .thenThrow(new MissionCardGenerator.NoMissionCandidateException())
+                .thenThrow(new MissionCardGenerator.NoMissionCandidateException())
+                .thenReturn(new MissionCardGenerator.MissionSlotResult(
+                        fallbackTemplate, "fallback", "fallback description"
+                ));
+
+        var response = missionCardService.regenerate(USER_ID);
+
+        assertThat(response.title()).isEqualTo("fallback");
     }
 
     private MissionCard card(LocalDate issuedDate, boolean completed, boolean replaced) {

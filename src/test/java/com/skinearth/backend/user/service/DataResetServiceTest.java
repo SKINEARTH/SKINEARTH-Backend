@@ -3,6 +3,8 @@ package com.skinearth.backend.user.service;
 import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
 import com.skinearth.backend.forecast.repository.ForecastRepository;
+import com.skinearth.backend.mission.ai.PendingMissionCandidateStore;
+import com.skinearth.backend.mission.ai.TodayMissionPreferenceStore;
 import com.skinearth.backend.mission.repository.MissionCardRepository;
 import com.skinearth.backend.user.dto.DataResetResponse;
 import com.skinearth.backend.user.entity.SkinConcern;
@@ -38,6 +40,10 @@ class DataResetServiceTest {
     private ForecastRepository forecastRepository;
     @Mock
     private MissionCardRepository missionCardRepository;
+    @Mock
+    private PendingMissionCandidateStore pendingMissionCandidateStore;
+    @Mock
+    private TodayMissionPreferenceStore todayMissionPreferenceStore;
 
     private DataResetService dataResetService;
 
@@ -47,7 +53,9 @@ class DataResetServiceTest {
                 userRepository,
                 dailyRecordRepository,
                 forecastRepository,
-                missionCardRepository
+                missionCardRepository,
+                pendingMissionCandidateStore,
+                todayMissionPreferenceStore
         );
     }
 
@@ -72,6 +80,8 @@ class DataResetServiceTest {
         assertThat(user.getNickname()).isNull();
         assertThat(user.getSkinConcerns()).isEmpty();
         assertThat(user.isPersonalizationCompleted()).isFalse();
+        verify(pendingMissionCandidateStore).clearForUser(USER_ID);
+        verify(todayMissionPreferenceStore).clearForUser(USER_ID);
     }
 
     @Test
@@ -84,6 +94,8 @@ class DataResetServiceTest {
         verify(dailyRecordRepository, never()).deleteByUserId(USER_ID);
         verify(forecastRepository, never()).deleteByUser_Id(USER_ID);
         verify(missionCardRepository, never()).deleteByUser_Id(USER_ID);
+        verify(pendingMissionCandidateStore, never()).clearForUser(USER_ID);
+        verify(todayMissionPreferenceStore, never()).clearForUser(USER_ID);
     }
 
     private User personalizedUser() {
