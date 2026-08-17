@@ -8,12 +8,9 @@ import com.skinearth.backend.mission.dto.MissionCompletionResponse;
 import com.skinearth.backend.mission.dto.MissionHistoryResponse;
 import com.skinearth.backend.mission.service.MissionCardService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/missions")
@@ -38,13 +35,9 @@ public class MissionCardController {
     }
 
     @GetMapping("/history/weekly")
-    public ApiResponse<MissionCompletionResponse> getWeeklyHistory(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-    ) {
+    public ApiResponse<MissionCompletionResponse> getWeeklyHistory(@AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(200, "주간 미션 이행 기록을 조회했습니다.",
-                missionCardService.getWeeklyHistory(userId(jwt), date));
+                missionCardService.getWeeklyHistory(userId(jwt)));
     }
 
     @GetMapping("/history/monthly")

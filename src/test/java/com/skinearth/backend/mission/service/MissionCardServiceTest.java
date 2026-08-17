@@ -142,7 +142,7 @@ class MissionCardServiceTest {
                 USER_ID, startDate, endDate
         )).thenReturn(List.of(pending, failed, completed));
 
-        MissionCompletionResponse response = missionCardService.getWeeklyHistory(USER_ID, TODAY);
+        MissionCompletionResponse response = missionCardService.getWeeklyHistory(USER_ID);
 
         assertThat(response.startDate()).isEqualTo(startDate);
         assertThat(response.endDate()).isEqualTo(endDate);
@@ -159,7 +159,7 @@ class MissionCardServiceTest {
                 USER_ID, startDate, endDate
         )).thenReturn(List.of());
 
-        MissionCompletionResponse response = missionCardService.getWeeklyHistory(USER_ID, null);
+        MissionCompletionResponse response = missionCardService.getWeeklyHistory(USER_ID);
 
         assertThat(response.issuedCount()).isZero();
         assertThat(response.completedCount()).isZero();
