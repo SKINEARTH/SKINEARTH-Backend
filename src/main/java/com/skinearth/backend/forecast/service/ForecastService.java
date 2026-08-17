@@ -56,33 +56,52 @@ public class ForecastService {
     private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
 
     @Transactional
-    public ForecastResponseDto createForecast(Long userId, ForecastRequestDto request) {
+    public ForecastResponseDto saveOrUpdateForecast(Long userId, ForecastRequestDto request) {
         LocalDate targetDate = LocalDate.now(clock).plusDays(1);
-        if (forecastRepository.existsByUser_IdAndTargetDate(userId, targetDate))
-            throw new IllegalArgumentException("내일의 예보가 이미 존재합니다.");
         User user = findUser(userId);
         if (!user.isPersonalizationCompleted())
             throw new IllegalArgumentException("개인화 설문을 먼저 완료해 주세요.");
+
+        Forecast forecast = forecastRepository.findByUser_IdAndTargetDate(userId, targetDate)
+                .orElseGet(() -> Forecast.builder()
+                        .user(user)
+                        .targetDate(targetDate)
+                        .build());
+
+        forecast.updateInputs(
+                request.inputAc(),
+                request.inputScreenTime(),
+                request.inputSleepHours(),
+                request.inputStress(),
+                request.inputMeal()
+        );
+
+        recalculateForecast(forecast, user, request, userId);
+
+        return ForecastResponseDto.from(forecastRepository.save(forecast));
+    }
+
+    private void recalculateForecast(Forecast forecast, User user, ForecastRequestDto request, Long userId) {
         long recordCount = dailyRecordRepository.countByUserId(userId);
-        Forecast forecast = Forecast.builder()
-                .user(user).targetDate(targetDate).inputAc(request.inputAc())
-                .inputScreenTime(request.inputScreenTime()).inputSleepHours(request.inputSleepHours())
-                .inputStress(request.inputStress()).inputMeal(request.inputMeal())
-                .build();
+        forecast.clearPrimaryFactors();
+
         if (recordCount < DATA_BASED_RECORD_COUNT) {
-            ColdStartResult result = coldStartCalculator.calculate(user.getUserStatus(), user.getSkinConcerns(), request);
-            var first = result.primaryFactors().get(0);
-            var second = result.primaryFactors().size() > 1 ? result.primaryFactors().get(1) : null;
-            forecast.applyRiskResult(result.riskScore(), result.riskLevel(), "COLD_START", (int) recordCount,
-                    FACTOR_NAME_KO.get(first.factor()), levelOf(first.normalizedRiskValue()),
-                    second == null ? null : FACTOR_NAME_KO.get(second.factor()),
-                    second == null ? null : levelOf(second.normalizedRiskValue()));
-            forecast.addPrimaryFactors(result.primaryFactors());
+            applyColdStartRisk(forecast, user, request, recordCount);
         } else {
             applyDataBasedRisk(forecast, userId, request, recordCount);
         }
         applyAiComment(forecast, user);
-        return ForecastResponseDto.from(forecastRepository.save(forecast));
+    }
+
+    private void applyColdStartRisk(Forecast forecast, User user, ForecastRequestDto request, long recordCount) {
+        ColdStartResult result = coldStartCalculator.calculate(user.getUserStatus(), user.getSkinConcerns(), request);
+        var first = result.primaryFactors().get(0);
+        var second = result.primaryFactors().size() > 1 ? result.primaryFactors().get(1) : null;
+        forecast.applyRiskResult(result.riskScore(), result.riskLevel(), "COLD_START", (int) recordCount,
+                FACTOR_NAME_KO.get(first.factor()), levelOf(first.normalizedRiskValue()),
+                second == null ? null : FACTOR_NAME_KO.get(second.factor()),
+                second == null ? null : levelOf(second.normalizedRiskValue()));
+        forecast.addPrimaryFactors(result.primaryFactors());
     }
 
     public ForecastResponseDto getForecast(Long userId) {

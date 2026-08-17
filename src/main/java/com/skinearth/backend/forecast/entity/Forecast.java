@@ -77,7 +77,20 @@ public class Forecast {
         for (int i = 0; i < results.size(); i++) factors.add(new ForecastFactor(this, results.get(i), i + 1));
     }
 
+    public void clearPrimaryFactors() {
+        factors.clear();
+    }
+
     public List<ForecastFactor> getFactors() { return Collections.unmodifiableList(factors); }
+
+    public void updateInputs(Integer inputAc, Integer inputScreenTime, Integer inputSleepHours,
+                             Integer inputStress, Integer inputMeal) {
+        this.inputAc = inputAc;
+        this.inputScreenTime = inputScreenTime;
+        this.inputSleepHours = inputSleepHours;
+        this.inputStress = inputStress;
+        this.inputMeal = inputMeal;
+    }
 
     public void applyRiskResult(Integer riskScore, String riskLevel, String source, Integer validRecordCount,
                                 String primaryFactor1Name, String primaryFactor1Level,
