@@ -50,6 +50,9 @@ public class MissionCardService {
 
     private MissionCard generateAndSaveTodayCard(Long userId, LocalDate today) {
         User user = findUser(userId);
+        if (!user.isPersonalizationCompleted()) {
+            throw new IllegalArgumentException("개인화 설문을 먼저 완료해 주세요.");
+        }
         MissionCard card = missionCardGenerator.generate(user, today);
         return missionCardRepository.save(card);
     }
