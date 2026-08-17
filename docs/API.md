@@ -514,10 +514,10 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 
 ### 9.3 주간 미션 완료율 조회
 
-`GET /api/missions/history/weekly?date={date}`
+`GET /api/missions/history/weekly`
 
-- `date`는 선택이며 생략하면 오늘을 기준으로 합니다.
-- 해당 주 월요일~일요일에 발행된 미션을 집계합니다.
+- 이번 주 월요일부터 일요일까지의 미션 완료 목표와 발행·완료 수를 조회합니다.
+- `achievementLevel`은 목표 진행률 기준으로 `HIGH_PROGRESS`(70% 이상), `MID_PROGRESS`(40% 이상), `LOW_PROGRESS`(40% 미만)를 반환합니다.
 
 ```json
 {
@@ -527,9 +527,11 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
   "data": {
     "startDate": "2026-08-10",
     "endDate": "2026-08-16",
+    "targetCount": 7,
     "issuedCount": 3,
     "completedCount": 1,
-    "completionRatePercent": 33.3
+    "completionRatePercent": 14.3,
+    "achievementLevel": "LOW_PROGRESS"
   }
 }
 ```
@@ -548,9 +550,11 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
   "data": {
     "startDate": "2026-08-01",
     "endDate": "2026-08-31",
+    "targetCount": 31,
     "issuedCount": 12,
     "completedCount": 9,
-    "completionRatePercent": 75.0
+    "completionRatePercent": 29.0,
+    "achievementLevel": "LOW_PROGRESS"
   }
 }
 ```

@@ -5,8 +5,10 @@ import java.time.LocalDate;
 public record MissionCompletionResponse(
         LocalDate startDate,
         LocalDate endDate,
+        int targetCount,
         int issuedCount,
         int completedCount,
-        double completionRatePercent
+        double completionRatePercent,
+        MissionAchievementLevel achievementLevel
 ) {
 }
