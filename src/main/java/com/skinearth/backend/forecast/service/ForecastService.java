@@ -150,12 +150,8 @@ public class ForecastService {
         all.add(factor("수면 시간", records, DailyRecord::getSleepHours, request.inputSleepHours(), FactorType.SLEEP));
         all.add(factor("스트레스", records, DailyRecord::getStressLevel, request.inputStress(), FactorType.NORMAL));
         all.add(factor("식사 규칙성", records, DailyRecord::getMealRegularity, request.inputMeal(), FactorType.INVERSE));
+        double score = riskScoreCalculator.calculateRiskScore(all);
         List<FactorCorrelation> primary = riskScoreCalculator.selectPrimaryFactors(all);
-        if (primary.isEmpty()) {
-            forecast.applyRiskResult(50, "보통", "데이터 기반", (int) recordCount, null, null, null, null);
-            return;
-        }
-        double score = riskScoreCalculator.calculateRiskScore(primary);
         String factor2Name = primary.size() > 1 ? primary.get(1).variableName() : null;
         String factor2Level = primary.size() > 1 ? riskScoreCalculator.determineRiskLevel(primary.get(1).normalizedInput()) : null;
         forecast.applyRiskResult((int) Math.round(score), riskScoreCalculator.determineRiskLevel(score), "데이터 기반",

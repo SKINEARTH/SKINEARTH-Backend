@@ -30,19 +30,23 @@ public class ColdStartCalculator {
         }
 
         Map<ForecastFactorType, Double> normalized = inputNormalizer.normalize(request);
-        List<ForecastFactorType> selected = new ArrayList<>(List.of(ForecastFactorType.values()));
-        selected.sort(comparator(scores, bonuses));
-        selected = selected.subList(0, Math.min(2, selected.size()));
-
         double weightedSum = 0;
         int weightSum = 0;
-        List<ColdStartFactorResult> factors = new ArrayList<>();
-        for (ForecastFactorType factor : selected) {
+        for (ForecastFactorType factor : ForecastFactorType.values()) {
             int weight = scores.get(factor);
             weightedSum += weight * normalized.get(factor);
             weightSum += weight;
-            factors.add(new ColdStartFactorResult(factor, weight, bonuses.get(factor), normalized.get(factor)));
         }
+
+        List<ForecastFactorType> selected = new ArrayList<>(List.of(ForecastFactorType.values()));
+        selected.sort(Comparator.<ForecastFactorType>comparingDouble(normalized::get).reversed()
+                .thenComparing(comparator(scores, bonuses)));
+        selected = selected.subList(0, Math.min(2, selected.size()));
+
+        List<ColdStartFactorResult> factors = selected.stream()
+                .map(factor -> new ColdStartFactorResult(
+                        factor, scores.get(factor), bonuses.get(factor), normalized.get(factor)))
+                .toList();
         int riskScore = (int) Math.round(weightedSum / weightSum);
         return new ColdStartResult(riskScore, levelOf(riskScore), List.copyOf(factors));
     }
