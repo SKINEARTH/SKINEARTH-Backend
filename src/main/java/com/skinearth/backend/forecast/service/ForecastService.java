@@ -56,17 +56,43 @@ public class ForecastService {
     private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
 
     @Transactional
-    public ForecastResponseDto saveOrUpdateForecast(Long userId, ForecastRequestDto request) {
+    public ForecastResponseDto createForecast(Long userId, ForecastRequestDto request) {
+        LocalDate targetDate = LocalDate.now(clock).plusDays(1);
+        User user = findUser(userId);
+        if (!user.isPersonalizationCompleted())
+            throw new IllegalArgumentException("개인화 설문을 먼저 완료해 주세요.");
+
+        if (forecastRepository.findByUser_IdAndTargetDate(userId, targetDate).isPresent()) {
+            throw new IllegalArgumentException("내일의 예보가 이미 존재합니다.");
+        }
+
+        Forecast forecast = Forecast.builder()
+                .user(user)
+                .targetDate(targetDate)
+                .build();
+
+        forecast.updateInputs(
+                request.inputAc(),
+                request.inputScreenTime(),
+                request.inputSleepHours(),
+                request.inputStress(),
+                request.inputMeal()
+        );
+
+        recalculateForecast(forecast, user, request, userId);
+
+        return ForecastResponseDto.from(forecastRepository.save(forecast));
+    }
+
+    @Transactional
+    public ForecastResponseDto updateForecast(Long userId, ForecastRequestDto request) {
         LocalDate targetDate = LocalDate.now(clock).plusDays(1);
         User user = findUser(userId);
         if (!user.isPersonalizationCompleted())
             throw new IllegalArgumentException("개인화 설문을 먼저 완료해 주세요.");
 
         Forecast forecast = forecastRepository.findByUser_IdAndTargetDate(userId, targetDate)
-                .orElseGet(() -> Forecast.builder()
-                        .user(user)
-                        .targetDate(targetDate)
-                        .build());
+                .orElseThrow(() -> new NotFoundException("내일의 예보가 없습니다. 먼저 예보를 생성해 주세요."));
 
         forecast.updateInputs(
                 request.inputAc(),

@@ -10,6 +10,7 @@ import com.skinearth.backend.forecast.coldstart.ForecastFactorType;
 import com.skinearth.backend.forecast.dto.ForecastRequestDto;
 import com.skinearth.backend.forecast.entity.Forecast;
 import com.skinearth.backend.forecast.repository.ForecastRepository;
+import com.skinearth.backend.common.exception.NotFoundException;
 import com.skinearth.backend.user.entity.SkinConcern;
 import com.skinearth.backend.user.entity.User;
 import com.skinearth.backend.user.entity.UserStatus;
@@ -28,7 +29,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,7 +91,7 @@ class ForecastServiceTest {
         when(forecastRepository.findByUser_IdAndTargetDate(USER_ID, TARGET_DATE)).thenReturn(Optional.empty());
         when(forecastRepository.save(any(Forecast.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = forecastService.saveOrUpdateForecast(USER_ID, request);
+        var response = forecastService.createForecast(USER_ID, request);
 
         assertThat(response.getTargetDate()).isEqualTo(TARGET_DATE);
         assertThat(response.getInputAc()).isEqualTo(5);
@@ -116,7 +119,7 @@ class ForecastServiceTest {
         when(forecastRepository.findByUser_IdAndTargetDate(USER_ID, TARGET_DATE)).thenReturn(Optional.of(existing));
         when(forecastRepository.save(existing)).thenReturn(existing);
 
-        var response = forecastService.saveOrUpdateForecast(USER_ID, request);
+        var response = forecastService.updateForecast(USER_ID, request);
 
         assertThat(response.getInputAc()).isEqualTo(5);
         assertThat(response.getInputScreenTime()).isEqualTo(4);
@@ -127,6 +130,26 @@ class ForecastServiceTest {
         assertThat(existing.getFactors().get(0).getFactor()).isEqualTo(ForecastFactorType.AC);
         assertThat(existing.getAiComment()).isEqualTo("새로 계산된 예보 코멘트입니다.");
         verify(forecastRepository).save(existing);
+    }
+
+    @Test
+    void rejectsUpdateWhenTomorrowForecastDoesNotExist() {
+        reset(dailyRecordRepository, coldStartCalculator, geminiClient);
+        when(forecastRepository.findByUser_IdAndTargetDate(USER_ID, TARGET_DATE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> forecastService.updateForecast(USER_ID, request))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void rejectsCreateWhenTomorrowForecastAlreadyExists() {
+        reset(dailyRecordRepository, coldStartCalculator, geminiClient);
+        Forecast existing = Forecast.builder().user(user).targetDate(TARGET_DATE).build();
+        when(forecastRepository.findByUser_IdAndTargetDate(USER_ID, TARGET_DATE)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> forecastService.createForecast(USER_ID, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("내일의 예보가 이미 존재합니다.");
     }
 
     private ColdStartResult coldStartResult() {
