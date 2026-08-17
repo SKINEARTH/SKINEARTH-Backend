@@ -148,11 +148,10 @@ public class MissionCardService {
     }
 
     @Transactional(readOnly = true)
-    public MissionCompletionResponse getWeeklyHistory(Long userId, LocalDate anchorDate) {
+    public MissionCompletionResponse getWeeklyHistory(Long userId) {
         LocalDate today = LocalDate.now(clock);
-        LocalDate effectiveDate = anchorDate == null ? today : anchorDate;
-        LocalDate startDate = effectiveDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate endDate = effectiveDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        LocalDate startDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate endDate = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         return getMissionCompletion(userId, startDate, endDate);
     }
