@@ -21,7 +21,8 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class MissionSlotSelector {
 
-    private static final int PRIMARY_FACTOR_BONUS = 4;
+    // 프로필(상태+피부고민) 점수 격차의 최악값이 7점이라, 오늘의 원인이 항상 이기도록 여유를 두고 10으로 설정
+    private static final int PRIMARY_FACTOR_BONUS = 10;
 
     private static final Map<MissionPriorityCalculator.MissionCategory, String> CATEGORY_TO_CAUSE = Map.of(
             MissionPriorityCalculator.MissionCategory.HYDRATION, "냉난방",
