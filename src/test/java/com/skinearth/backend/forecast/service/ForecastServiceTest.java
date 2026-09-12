@@ -134,6 +134,19 @@ class ForecastServiceTest {
     }
 
     @Test
+    void usesRiskLevelFallbackCommentWhenGeminiFails() {
+        when(forecastRepository.findByUser_IdAndTargetDate(USER_ID, TARGET_DATE)).thenReturn(Optional.empty());
+        when(forecastRepository.save(any(Forecast.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(geminiClient.generateComment(any())).thenThrow(new RuntimeException("Gemini failed"));
+
+        var response = forecastService.createForecast(USER_ID, request);
+
+        assertThat(response.getAiComment())
+                .isEqualTo("테스트님, 내일은 냉난방 노출 영향이 특히 클 것 같아요. 미리 챙기시는 걸 추천해요.");
+        assertThat(response.getIsCommentFallback()).isTrue();
+    }
+
+    @Test
     void rejectsUpdateWhenTomorrowForecastDoesNotExist() {
         reset(dailyRecordRepository, coldStartCalculator, geminiClient);
         when(forecastRepository.findByUser_IdAndTargetDate(USER_ID, TARGET_DATE)).thenReturn(Optional.empty());

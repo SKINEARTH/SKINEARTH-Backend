@@ -37,7 +37,6 @@ public class ForecastService {
     private static final Logger log = LoggerFactory.getLogger(ForecastService.class);
     private static final int DATA_BASED_RECORD_COUNT = 10;
     private static final double SLEEP_OPTIMAL_HOURS = 7.0;
-    private static final String FALLBACK_COMMENT = "아직 데이터를 분석하는 중이에요. 오늘도 꾸준히 기록하며 피부 컨디션을 함께 살펴봐요!";
     private static final Map<ForecastFactorType, String> FACTOR_NAME_KO = Map.of(
             ForecastFactorType.AC, "냉난방 노출",
             ForecastFactorType.SCREEN_TIME, "화면 노출",
@@ -188,8 +187,34 @@ public class ForecastService {
             forecast.applyAiComment(geminiClient.generateComment(prompt), false);
         } catch (Exception exception) {
             log.warn("Gemini 코멘트 생성 실패, 폴백 문구로 대체합니다.", exception);
-            forecast.applyAiComment(FALLBACK_COMMENT, true);
+            forecast.applyAiComment(fallbackComment(forecast, user), true);
         }
+    }
+
+    private String fallbackComment(Forecast forecast, User user) {
+        String nickname = user.getNickname() != null ? user.getNickname() : "여행자";
+        String primaryFactor = forecast.getPrimaryFactor1Name();
+
+        if (primaryFactor == null || primaryFactor.isBlank()) {
+            return "%s님, 아직 뚜렷한 패턴을 찾지 못했어요. 조금 더 기록을 쌓으면 더 정확해질 거예요."
+                    .formatted(nickname);
+        }
+
+        String riskLevel = forecast.getRiskLevel();
+        if (riskLevel == null) {
+            return "%s님, 아직 뚜렷한 패턴을 찾지 못했어요. 조금 더 기록을 쌓으면 더 정확해질 거예요."
+                    .formatted(nickname);
+        }
+
+        return switch (riskLevel) {
+            case "낮음" -> "%s님, 내일은 위험도가 낮아요. 평소처럼 관리하시면 될 것 같아요.".formatted(nickname);
+            case "보통" -> "%s님, 내일은 주의가 필요해요. %s 영향이 있을 수 있으니 가볍게 신경 써주세요."
+                    .formatted(nickname, primaryFactor);
+            case "높음" -> "%s님, 내일은 %s 영향이 특히 클 것 같아요. 미리 챙기시는 걸 추천해요."
+                    .formatted(nickname, primaryFactor);
+            default -> "%s님, 아직 뚜렷한 패턴을 찾지 못했어요. 조금 더 기록을 쌓으면 더 정확해질 거예요."
+                    .formatted(nickname);
+        };
     }
 
     private String levelOf(double score) {
