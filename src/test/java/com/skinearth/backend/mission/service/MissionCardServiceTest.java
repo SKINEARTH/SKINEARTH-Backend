@@ -127,8 +127,43 @@ class MissionCardServiceTest {
                 .thenReturn(Optional.of(card));
 
         assertThatThrownBy(() -> missionCardService.complete(USER_ID, CARD_ID))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("이미 완료한 미션입니다.");
+                .isInstanceOf(MissionActionException.class)
+                .hasMessage("오늘 미션은 이미 완료했어요.")
+                .extracting("code")
+                .isEqualTo("MISSION_ALREADY_COMPLETED");
+    }
+
+    @Test
+    void rejectsRegenerationAfterCompletion() {
+        MissionCard completed = card(TODAY, true, false);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(completed));
+
+        assertAlreadyCompleted(() -> missionCardService.regenerate(USER_ID));
+    }
+
+    @Test
+    void rejectsIntensityAdjustmentAfterCompletion() {
+        MissionCard completed = card(TODAY, true, false);
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(completed));
+
+        assertAlreadyCompleted(() -> missionCardService.adjustIntensity(USER_ID));
+    }
+
+    @Test
+    void rejectsCategoryExclusionAfterCompletion() {
+        MissionCard completed = card(TODAY, true, false);
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(completed));
+
+        assertAlreadyCompleted(() -> missionCardService.excludeCurrentCategory(USER_ID));
+    }
+
+    @Test
+    void rejectsAlternativeConfirmationAfterCompletion() {
+        MissionCard completed = card(TODAY, true, false);
+        when(missionCardRepository.findByUser_IdAndIssuedDate(USER_ID, TODAY)).thenReturn(Optional.of(completed));
+
+        assertAlreadyCompleted(() -> missionCardService.confirmAlternative(USER_ID));
     }
 
     @Test
@@ -348,6 +383,14 @@ class MissionCardServiceTest {
             card.complete(issuedDate.atTime(18, 0));
         }
         return card;
+    }
+
+    private void assertAlreadyCompleted(org.assertj.core.api.ThrowableAssert.ThrowingCallable action) {
+        assertThatThrownBy(action)
+                .isInstanceOf(MissionActionException.class)
+                .hasMessage("오늘 미션은 이미 완료했어요.")
+                .extracting("code")
+                .isEqualTo("MISSION_ALREADY_COMPLETED");
     }
 
     private MissionTemplate template(String cause, String actionType, String intensity) {
