@@ -1,10 +1,13 @@
 package com.skinearth.backend.forecast.ai;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +26,12 @@ public class GeminiClient {
         this.apiKey = apiKey;
         this.model = model;
 
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(5000);
-        requestFactory.setReadTimeout(30000);
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofMillis(5000))
+                .build();
+
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(Duration.ofMillis(30000));
 
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
@@ -42,6 +48,8 @@ public class GeminiClient {
 
         GeminiResponse response = restClient.post()
                 .uri("/models/{model}:generateContent?key={key}", model, apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
                 .body(requestBody)
                 .retrieve()
                 .body(GeminiResponse.class);
