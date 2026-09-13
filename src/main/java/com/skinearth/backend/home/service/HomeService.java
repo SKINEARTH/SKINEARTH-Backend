@@ -51,7 +51,11 @@ public class HomeService {
         return new HomeResponse(
                 today,
                 user.getNickname(),
-                temperatureCalculator.calculate(recentForecasts, today),
+                temperatureCalculator.calculate(
+                        recentForecasts,
+                        today,
+                        todayRecord == null ? null : todayRecord.getSkinCondition()
+                ),
                 new TodayRecordStatusResponse(todayRecord != null,
                         todayRecord == null ? null : todayRecord.getId(), todayRecord == null),
                 progress(recordCount, target),

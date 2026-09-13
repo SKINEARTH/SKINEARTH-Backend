@@ -653,7 +653,8 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
     "planetTemperature": {
       "score": 62,
       "level": "주의",
-      "sampleCount": 8
+      "sampleCount": 8,
+      "source": "FORECAST"
     },
     "todayRecord": {
       "recorded": false,
@@ -694,6 +695,9 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 ```
 
 - 행성 온도계는 최근 14일 예보 위험도를 사용하며 오늘과 전날 값에 2배 가중치를 적용합니다.
+- 오늘 날짜의 예보가 없고 오늘 일일 기록이 있으면 피부 컨디션을 홈 표시용 위험도(`1→100`, `2→75`, `3→50`, `4→25`, `5→0`)로 변환합니다.
+- 기록 기반 값은 예보로 저장하거나 최근 14일 평균에 포함하지 않습니다.
+- `planetTemperature.source`는 `FORECAST`, `DAILY_RECORD`, `NO_DATA` 중 하나입니다.
 - 위험도 기록이 없으면 `planetTemperature.score`는 `null`, 단계는 `데이터 없음`입니다.
 - 온도계 단계는 `0~39 안정`, `40~69 주의`, `70~100 이탈`입니다.
 - 내일 예보가 아직 생성되지 않았다면 `tomorrowForecast`는 `null`입니다.

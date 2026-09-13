@@ -60,8 +60,8 @@ class HomeServiceTest {
         when(forecastRepository.findAllByUser_IdAndTargetDateBetweenOrderByTargetDateAsc(anyLong(), any(), any()))
                 .thenReturn(List.of());
         when(forecastRepository.findByUser_IdAndTargetDate(1L, today.plusDays(1))).thenReturn(Optional.empty());
-        when(temperatureCalculator.calculate(anyList(), eq(today)))
-                .thenReturn(new PlanetTemperatureResponse(62, "주의", 5));
+        when(temperatureCalculator.calculate(anyList(), eq(today), isNull()))
+                .thenReturn(new PlanetTemperatureResponse(62, "주의", 5, "FORECAST"));
         when(missionCardService.getTodayCard(1L)).thenReturn(mission);
         when(badgeService.getStageInfo(1L)).thenReturn(badge);
 
