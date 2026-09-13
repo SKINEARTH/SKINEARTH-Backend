@@ -65,6 +65,7 @@ public class MissionCardService {
         User user = findUser(userId);
         MissionCard current = missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
                 .orElseThrow(() -> new NotFoundException("오늘 발행된 미션 카드가 없습니다."));
+        ensureNotCompleted(current);
 
         MissionCardGenerator.MissionSlotResult result = generateAlternative(userId, user, today, current);
         pendingStore.save(userId, today, new PendingMissionCandidateStore.PendingCandidate(
@@ -80,6 +81,7 @@ public class MissionCardService {
         LocalDate today = LocalDate.now(clock);
         MissionCard current = missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
                 .orElseThrow(() -> new NotFoundException("오늘 발행된 미션 카드가 없습니다."));
+        ensureNotCompleted(current);
 
         if ("가벼운".equals(current.getTemplate().getIntensity())) {
             throw new MissionActionException(
@@ -113,6 +115,7 @@ public class MissionCardService {
         LocalDate today = LocalDate.now(clock);
         MissionCard current = missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
                 .orElseThrow(() -> new NotFoundException("오늘 발행된 미션 카드가 없습니다."));
+        ensureNotCompleted(current);
 
         String category = current.getTemplate().getCategory();
         preferenceStore.excludeCategory(userId, today, category);
@@ -124,6 +127,7 @@ public class MissionCardService {
         LocalDate today = LocalDate.now(clock);
         MissionCard current = missionCardRepository.findByUser_IdAndIssuedDate(userId, today)
                 .orElseThrow(() -> new NotFoundException("오늘 발행된 미션 카드가 없습니다."));
+        ensureNotCompleted(current);
 
         PendingMissionCandidateStore.PendingCandidate candidate = pendingStore.get(userId, today)
                 .orElseThrow(() -> new MissionActionException(
@@ -147,12 +151,22 @@ public class MissionCardService {
         if (!card.getIssuedDate().isEqual(today)) {
             throw new IllegalArgumentException("오늘 발행된 미션만 완료할 수 있습니다.");
         }
+        ensureNotCompleted(card);
 
         card.complete(LocalDateTime.now(clock));
 
         badgeService.tryPromote(userId, 0, 0);
 
         return MissionHistoryResponse.from(card, today);
+    }
+
+    private void ensureNotCompleted(MissionCard card) {
+        if (Boolean.TRUE.equals(card.getIsCompleted())) {
+            throw new MissionActionException(
+                    "MISSION_ALREADY_COMPLETED",
+                    "오늘 미션은 이미 완료했어요."
+            );
+        }
     }
 
     @Transactional(readOnly = true)
