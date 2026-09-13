@@ -13,8 +13,8 @@ class RecordStreakCalculatorTest {
     private final LocalDate today = LocalDate.of(2026, 8, 14);
 
     @Test
-    void resetsToZeroWhenPreviousDayRecordDoesNotExist() {
-        assertThat(calculator.calculate(List.of(today), today)).isZero();
+    void countsTheFirstRecordAsOneDay() {
+        assertThat(calculator.calculate(List.of(today), today)).isEqualTo(1);
     }
 
     @Test
@@ -42,10 +42,10 @@ class RecordStreakCalculatorTest {
     }
 
     @Test
-    void resetsToZeroEvenWhenOlderRecordsExistButYesterdayIsMissing() {
+    void countsTodayAsOneEvenWhenOlderRecordsExistButYesterdayIsMissing() {
         List<LocalDate> dates = List.of(today, today.minusDays(2), today.minusDays(3));
 
-        assertThat(calculator.calculate(dates, today)).isZero();
+        assertThat(calculator.calculate(dates, today)).isEqualTo(1);
     }
 
     @Test
