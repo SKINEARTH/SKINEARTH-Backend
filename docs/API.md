@@ -374,6 +374,8 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
 - 주간: 기준 날짜가 속한 월요일~일요일
 - 월간: 기준 날짜가 속한 달의 1일~말일
 - 기록이 없는 날짜도 `skinCondition: null`로 포함됩니다.
+- 해당 날짜의 예보가 없으면 `riskScore: null`로 포함됩니다.
+- `skinCondition`은 사용자가 입력한 피부 상태(1~5), `riskScore`는 예보 위험 점수(0~100)입니다.
 
 ```json
 {
@@ -387,9 +389,9 @@ JWT 사용자에게 저장된 내일 예보를 조회합니다.
     "recordCount": 2,
     "averageSkinCondition": 3.5,
     "points": [
-      {"date": "2026-08-10", "skinCondition": 3},
-      {"date": "2026-08-11", "skinCondition": null},
-      {"date": "2026-08-12", "skinCondition": 4}
+      {"date": "2026-08-10", "skinCondition": 3, "riskScore": 42},
+      {"date": "2026-08-11", "skinCondition": null, "riskScore": null},
+      {"date": "2026-08-12", "skinCondition": 4, "riskScore": 35}
     ]
   }
 }

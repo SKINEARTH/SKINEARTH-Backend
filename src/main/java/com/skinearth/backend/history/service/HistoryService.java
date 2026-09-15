@@ -2,6 +2,8 @@ package com.skinearth.backend.history.service;
 
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
+import com.skinearth.backend.forecast.entity.Forecast;
+import com.skinearth.backend.forecast.repository.ForecastRepository;
 import com.skinearth.backend.history.dto.CauseTimelineItemResponse;
 import com.skinearth.backend.history.dto.HistoryPeriod;
 import com.skinearth.backend.history.dto.HistoryPointResponse;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class HistoryService {
 
     private final DailyRecordRepository dailyRecordRepository;
+    private final ForecastRepository forecastRepository;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -38,11 +41,20 @@ public class HistoryService {
                 .findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(userId, startDate, endDate);
         Map<LocalDate, DailyRecord> recordsByDate = records.stream()
                 .collect(Collectors.toMap(DailyRecord::getRecordDate, Function.identity()));
+        Map<LocalDate, Forecast> forecastsByDate = forecastRepository
+                .findAllByUser_IdAndTargetDateBetweenOrderByTargetDateAsc(userId, startDate, endDate)
+                .stream()
+                .collect(Collectors.toMap(Forecast::getTargetDate, Function.identity()));
 
         List<HistoryPointResponse> points = startDate.datesUntil(endDate.plusDays(1))
                 .map(date -> {
                     DailyRecord record = recordsByDate.get(date);
-                    return new HistoryPointResponse(date, record == null ? null : record.getSkinCondition());
+                    Forecast forecast = forecastsByDate.get(date);
+                    return new HistoryPointResponse(
+                            date,
+                            record == null ? null : record.getSkinCondition(),
+                            forecast == null ? null : forecast.getRiskScore()
+                    );
                 })
                 .toList();
 
