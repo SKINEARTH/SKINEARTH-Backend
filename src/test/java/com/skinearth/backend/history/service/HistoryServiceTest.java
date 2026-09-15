@@ -2,6 +2,8 @@ package com.skinearth.backend.history.service;
 
 import com.skinearth.backend.dailyrecord.entity.DailyRecord;
 import com.skinearth.backend.dailyrecord.repository.DailyRecordRepository;
+import com.skinearth.backend.forecast.entity.Forecast;
+import com.skinearth.backend.forecast.repository.ForecastRepository;
 import com.skinearth.backend.history.dto.CauseTimelineItemResponse;
 import com.skinearth.backend.history.dto.HistoryPeriod;
 import com.skinearth.backend.history.dto.HistoryResponse;
@@ -28,6 +30,8 @@ class HistoryServiceTest {
 
     @Mock
     private DailyRecordRepository dailyRecordRepository;
+    @Mock
+    private ForecastRepository forecastRepository;
 
     private HistoryService historyService;
     private User user;
@@ -35,7 +39,7 @@ class HistoryServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-08-14T03:00:00Z"), ZoneId.of("Asia/Seoul"));
-        historyService = new HistoryService(dailyRecordRepository, clock);
+        historyService = new HistoryService(dailyRecordRepository, forecastRepository, clock);
         user = User.builder()
                 .email("user@example.com")
                 .passwordHash("encoded-password")
@@ -52,6 +56,9 @@ class HistoryServiceTest {
         when(dailyRecordRepository.findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
                 USER_ID, startDate, endDate
         )).thenReturn(List.of(record(startDate, 3), record(startDate.plusDays(2), 4)));
+        when(forecastRepository.findAllByUser_IdAndTargetDateBetweenOrderByTargetDateAsc(
+                USER_ID, startDate, endDate
+        )).thenReturn(List.of(forecast(startDate, 42)));
 
         HistoryResponse response = historyService.get(
                 USER_ID, HistoryPeriod.WEEKLY, LocalDate.of(2026, 8, 14));
@@ -61,7 +68,9 @@ class HistoryServiceTest {
         assertThat(response.recordCount()).isEqualTo(2);
         assertThat(response.averageSkinCondition()).isEqualTo(3.5);
         assertThat(response.points()).hasSize(7);
+        assertThat(response.points().get(0).riskScore()).isEqualTo(42);
         assertThat(response.points().get(1).skinCondition()).isNull();
+        assertThat(response.points().get(1).riskScore()).isNull();
     }
 
     @Test
@@ -69,6 +78,9 @@ class HistoryServiceTest {
         LocalDate startDate = LocalDate.of(2026, 2, 1);
         LocalDate endDate = LocalDate.of(2026, 2, 28);
         when(dailyRecordRepository.findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
+                USER_ID, startDate, endDate
+        )).thenReturn(List.of());
+        when(forecastRepository.findAllByUser_IdAndTargetDateBetweenOrderByTargetDateAsc(
                 USER_ID, startDate, endDate
         )).thenReturn(List.of());
 
@@ -80,7 +92,7 @@ class HistoryServiceTest {
         assertThat(response.recordCount()).isZero();
         assertThat(response.averageSkinCondition()).isNull();
         assertThat(response.points()).hasSize(28)
-                .allMatch(point -> point.skinCondition() == null);
+                .allMatch(point -> point.skinCondition() == null && point.riskScore() == null);
     }
 
     @Test
@@ -88,6 +100,9 @@ class HistoryServiceTest {
         LocalDate startDate = LocalDate.of(2026, 8, 10);
         LocalDate endDate = LocalDate.of(2026, 8, 16);
         when(dailyRecordRepository.findAllByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
+                USER_ID, startDate, endDate
+        )).thenReturn(List.of());
+        when(forecastRepository.findAllByUser_IdAndTargetDateBetweenOrderByTargetDateAsc(
                 USER_ID, startDate, endDate
         )).thenReturn(List.of());
 
@@ -136,6 +151,14 @@ class HistoryServiceTest {
                 .user(user)
                 .recordDate(date)
                 .skinCondition(skinCondition)
+                .build();
+    }
+
+    private Forecast forecast(LocalDate date, int riskScore) {
+        return Forecast.builder()
+                .user(user)
+                .targetDate(date)
+                .riskScore(riskScore)
                 .build();
     }
 
